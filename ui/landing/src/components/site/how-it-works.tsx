@@ -130,10 +130,11 @@ export function HowItWorks() {
                 const x = 16 + i * cstep;
                 const top = cy(Math.max(c.o, c.c));
                 const bottom = cy(Math.min(c.o, c.c));
+                const colour = c.c >= c.o ? "var(--up)" : "var(--down)";
                 return (
-                  <g key={i} opacity="0.5">
+                  <g key={i} opacity="0.7">
                     <line
-                      stroke="var(--fg-subtle)"
+                      stroke={colour}
                       strokeWidth="1"
                       x1={x + cstep / 2}
                       x2={x + cstep / 2}
@@ -141,7 +142,7 @@ export function HowItWorks() {
                       y2={cy(c.l)}
                     />
                     <rect
-                      fill="var(--fg-subtle)"
+                      fill={colour}
                       height={Math.max(1.5, bottom - top)}
                       width={cstep * 0.58}
                       x={x + cstep * 0.21}

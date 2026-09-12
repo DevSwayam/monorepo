@@ -200,7 +200,7 @@
  * target level, the primary action. Never decoration.
  */
 .dark {
-  /*, ground ------------------------------------------------------------- */
+  /* --- ground ------------------------------------------------------------- */
   --bg: #09090b;
   --surface: #0e0e11;
   --surface-2: #151518;
@@ -210,24 +210,37 @@
      so it has to be beaten here or every primitive keeps its corners. */
   --radius: 0rem;
 
-  /*, ink ---------------------------------------------------------------- */
+  /* --- ink ---------------------------------------------------------------- */
   --fg: #fafafa;
   --fg-muted: #a1a1aa;
   /* Verified 4.9:1 on --surface for 12px kickers. See scripts/check-contrast.mjs. */
   --fg-subtle: #82828d;
 
-  /*, the one hue -------------------------------------------------------- */
-  /* Marker orange: the colour of the pen you would draw on a screenshot with.
-     Warm, and nowhere near the green every other perps venue reaches for. */
-  --brand: #ff6b35;
-  --brand-soft: #ff8c5a;
-  --brand-dim: #ff6b3522;
+  /* --- the one hue ------------------------------------------------------ */
+  /* Ballpoint blue: the ink you would actually draw the line in.
+   *
+   * Pitched lighter than real ink on purpose. A true ballpoint (#1b3fbf) is
+   * only 2.4:1 on this ground, so it could be a button fill but never a
+   * figure, and this hue has to be both: the drawn path, up-ticks, target
+   * levels and the primary action. This lands at 6.3:1 on --bg, with a dark
+   * label reading 6.2:1 on top of it. Verified by scripts/check-contrast.mjs. */
+  --brand: #5b8cff;
+  --brand-soft: #7ba3ff;
+  --brand-dim: #5b8cff22;
+
+  /* Market direction. Not part of the accent system: green up and red down is
+   * a convention traders read without thinking, and overriding it to stay on
+   * palette would make every chart on the page harder to scan. These are only
+   * ever used for price movement, never for UI state.
+   * 8.7:1 and 5.3:1 on --bg. */
+  --up: #22c55e;
+  --down: #f04438;
 
   /* Structural rules, dimmer than a border: these are the page grid. */
   --grid-dot: #1a1a1f;
   --grid-line: #141418;
 
-  /*, mapped onto coss tokens -------------------------------------------- */
+  /* --- mapped onto coss tokens -------------------------------------------- */
   --background: var(--bg);
   --foreground: var(--fg);
   --card: var(--surface);
@@ -246,7 +259,7 @@
   /* Green is the live/positive voice: primary action, up-ticks, the target
      level, the drawn path. Everything structural stays neutral. */
   --primary: var(--brand);
-  --primary-foreground: #180701;
+  --primary-foreground: #060b18;
   --ring: var(--fg);
 
   --destructive: var(--color-red-500);
@@ -255,7 +268,7 @@
   --info-foreground: var(--brand);
   --success: var(--brand);
   --success-foreground: var(--brand);
-  --brand-foreground: #180701;
+  --brand-foreground: #060b18;
   --warning: var(--color-amber-500);
   --warning-foreground: var(--color-amber-400);
 
@@ -268,6 +281,8 @@
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
   --color-brand-dim: var(--brand-dim);
+  --color-up: var(--up);
+  --color-down: var(--down);
   --color-fg-muted: var(--fg-muted);
   --color-fg-subtle: var(--fg-subtle);
   --color-surface: var(--surface);

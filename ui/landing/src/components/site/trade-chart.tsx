@@ -133,10 +133,10 @@ export function TradeChart({ className }: { className?: string }) {
         const bottom = y(Math.min(c.o, c.c));
         return (
           <g
-            fill={up ? "var(--brand)" : "var(--fg-subtle)"}
+            fill={up ? "var(--up)" : "var(--down)"}
             key={i}
-            opacity={up ? 0.42 : 0.5}
-            stroke={up ? "var(--brand)" : "var(--fg-subtle)"}
+            opacity="0.75"
+            stroke={up ? "var(--up)" : "var(--down)"}
           >
             <line
               strokeWidth="0.9"

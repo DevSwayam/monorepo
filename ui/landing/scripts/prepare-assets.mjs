@@ -65,7 +65,7 @@ const ICON = 512;
 const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ICON}" height="${ICON}" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#09090b"/>
   <path d="M104 376 C 176 352, 220 314, 266 266 S 342 186, 376 152"
-        fill="none" stroke="#ff6b35" stroke-width="64" stroke-linecap="round"/>
+        fill="none" stroke="#5b8cff" stroke-width="64" stroke-linecap="round"/>
   <circle cx="392" cy="140" r="46" fill="#fafafa"/>
 </svg>`;
 await sharp(Buffer.from(iconSvg)).png().toFile("src/app/icon.png");

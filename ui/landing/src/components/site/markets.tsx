@@ -37,9 +37,9 @@ function Candles({
           const up = k.c >= k.o;
           const top = y(Math.max(k.o, k.c));
           const bottom = y(Math.min(k.o, k.c));
-          const colour = up ? "var(--brand)" : "var(--fg-subtle)";
+          const colour = up ? "var(--up)" : "var(--down)";
           return (
-            <g key={i} opacity={up ? 1 : 0.55}>
+            <g key={i} opacity="0.9">
               <line
                 stroke={colour}
                 strokeWidth="1.4"
@@ -115,7 +115,7 @@ export function Markets() {
                 <span
                   className={cn(
                     "font-mono text-sm tabular-nums",
-                    up ? "text-brand" : "text-fg-subtle",
+                    up ? "text-up" : "text-down",
                   )}
                 >
                   {fmtSigned(t.change)}%

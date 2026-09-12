@@ -51,7 +51,7 @@ export function TradePanel({ className }: { className?: string }) {
         <span className="font-mono text-foreground text-sm tabular-nums">
           {fmtUsd(MARKET.last, 2)}
         </span>
-        <span className="font-mono text-brand text-xs tabular-nums">
+        <span className="font-mono text-up text-xs tabular-nums">
           {fmtSigned(MARKET.change24h)}%
         </span>
         <span className="ml-auto hidden items-center gap-1.5 text-fg-subtle text-xs sm:flex">

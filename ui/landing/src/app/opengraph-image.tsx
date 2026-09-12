@@ -100,7 +100,7 @@ export default async function OpengraphImage() {
                 style={{
                   width: 7,
                   height: h,
-                  backgroundColor: i > 20 ? "#ff6b35" : "#2a2a30",
+                  backgroundColor: i > 20 ? "#5b8cff" : "#2a2a30",
                 }}
               />
             ))}

@@ -34,7 +34,7 @@ export function Ticker({ className }: { className?: string }) {
             <span
               className={cn(
                 "text-right font-mono text-xs tabular-nums",
-                t.change >= 0 ? "text-brand" : "text-fg-subtle",
+                t.change >= 0 ? "text-up" : "text-down",
               )}
             >
               {fmtSigned(t.change)}%
