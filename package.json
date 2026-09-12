@@ -1,0 +1,26 @@
+{
+  "name": "skech",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "ui/*"
+  ],
+  "packageManager": "bun@1.4.0",
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:landing": "bun run --filter @skech/landing dev",
+    "dev:app": "bun run --filter @skech/app dev",
+    "build": "bun run --filter '*' build",
+    "start": "bun run --filter '*' start",
+    "lint": "bun run --filter '*' lint",
+    "typecheck": "bun run --filter '*' typecheck",
+    "clean": "rm -rf node_modules ui/*/node_modules ui/*/.next"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  },
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
+}
