@@ -1,10 +1,11 @@
-import { BothEndings } from "@/components/site/both-endings";
 import { Cta } from "@/components/site/cta";
 import { Faq } from "@/components/site/faq";
 import { SiteFooter } from "@/components/site/footer";
 import { Hero } from "@/components/site/hero";
 import { HowItWorks } from "@/components/site/how-it-works";
+import { Redraw } from "@/components/site/redraw";
 import { WhatItSets } from "@/components/site/what-it-sets";
+import { WorkedExample } from "@/components/site/worked-example";
 import { SiteNav } from "@/components/site/nav";
 import { Thesis } from "@/components/site/thesis";
 
@@ -30,7 +31,8 @@ export default function HomePage() {
         <Thesis />
         <WhatItSets />
         <HowItWorks />
-        <BothEndings />
+        <WorkedExample />
+        <Redraw />
         <Faq />
         <Cta />
       </main>

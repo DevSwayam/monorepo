@@ -176,20 +176,222 @@ export function smoothPath(pts: { x: number; y: number }[]) {
   return d;
 }
 
+// --- the three endings -----------------------------------------------------
+
+/** Forecast candles per scenario. One per tick of the animation. */
+export const FORECAST_BARS = 24;
+
+type Waypoint = { t: number; price: number };
+
+/** Piecewise linear read of a waypoint list at any t. */
+function priceAt(pts: Waypoint[], t: number) {
+  if (t <= pts[0].t) return pts[0].price;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    if (t <= b.t) {
+      const k = (t - a.t) / (b.t - a.t || 1);
+      return a.price + (b.price - a.price) * k;
+    }
+  }
+  return pts[pts.length - 1].price;
+}
+
+/** Evenly spaced waypoints, so a scenario is written as a list of prices. */
+const shape = (prices: number[]): Waypoint[] =>
+  prices.map((price, i) => ({ t: i / (prices.length - 1), price }));
+
 /**
- * The other ending. Same entry, same size, price walks down through the
- * invalidation instead of up to the target. Not something the trader drew, it
- * is what the market does to the drawing, so it is dashed wherever it is shown.
+ * Candles along a shape, with the last close pinned to where the trade ends.
+ *
+ * Pinning matters: the exit price is quoted in the caption and shown as a
+ * level on the chart, and a series that finishes three dollars off it makes
+ * the whole frame read as approximate.
  */
-export const BREAK_PATH: { t: number; price: number }[] = [
-  { t: 0, price: ORDER.entry },
-  { t: 0.09, price: 64_520 },
-  { t: 0.2, price: 64_010 },
-  { t: 0.31, price: 64_240 },
-  { t: 0.43, price: 63_540 },
-  { t: 0.55, price: 63_720 },
-  { t: 0.68, price: 63_180 },
-  { t: 0.8, price: 63_390 },
-  { t: 0.9, price: 62_960 },
-  { t: 1, price: ORDER.invalidation },
+function forecast(
+  seed: number,
+  pts: Waypoint[],
+  vol: number,
+  /**
+   * Nothing may trade through the exit before the last bar. Without this a
+   * wick strays past the invalidation four candles early, and a trader reading
+   * the frame sees a position that should already have closed.
+   */
+  keepInside: { min: number; max: number },
+): Candle[] {
+  const rand = mulberry32(seed);
+  const hold = (v: number) =>
+    Math.min(keepInside.max, Math.max(keepInside.min, v));
+  const out: Candle[] = [];
+  let open = pts[0].price;
+  for (let i = 0; i < FORECAST_BARS; i++) {
+    const t = (i + 1) / FORECAST_BARS;
+    const finalBar = i === FORECAST_BARS - 1;
+    const close = finalBar
+      ? pts[pts.length - 1].price
+      : hold(priceAt(pts, t) + (rand() - 0.5) * vol);
+    const wick = vol * (0.25 + rand() * 0.45);
+    const high = Math.max(open, close) + rand() * wick;
+    const low = Math.min(open, close) - rand() * wick;
+    out.push({
+      o: open,
+      c: close,
+      h: finalBar ? Math.max(open, close) : hold(high),
+      l: finalBar ? Math.min(open, close) : hold(low),
+    });
+    open = close;
+  }
+  return out;
+}
+
+/** A hair inside a level, so a candle can approach it without touching. */
+const INSIDE = 60;
+
+export type Scenario = {
+  key: string;
+  n: string;
+  title: string;
+  caption: string;
+  /** Where the position actually closes, and what it is worth there. */
+  exit: number;
+  exitLabel: string;
+  bars: Candle[];
+};
+
+export const SCENARIOS: Scenario[] = [
+  {
+    key: "runs",
+    n: "01",
+    title: "It runs",
+    caption:
+      "Price does roughly what you drew. It takes its time about it and dips under your entry on the way, which is the part that makes people close early.",
+    exit: ORDER.target,
+    exitLabel: "Closed at target",
+    bars: forecast(
+      7301,
+      shape([
+        ORDER.entry, 64_640, 64_210, 63_880, 64_390, 65_060, 64_820, 65_540,
+        66_280, 66_010, 66_880, ORDER.target,
+      ]),
+      210,
+      { min: ORDER.invalidation + INSIDE, max: ORDER.target - INSIDE },
+    ),
+  },
+  {
+    key: "stalls",
+    n: "02",
+    title: "It goes nowhere",
+    caption:
+      "An hour of nothing. The reason you were long stops being true, so you take it off where you got in and leave with what you came with, minus the funding you paid to sit there.",
+    exit: ORDER.entry,
+    exitLabel: "Closed flat",
+    bars: forecast(
+      4417,
+      shape([
+        ORDER.entry, 64_430, 64_090, 64_340, 63_970, 64_260, 64_030, 64_370,
+        64_140, 64_290, 64_070, ORDER.entry,
+      ]),
+      175,
+      { min: ORDER.invalidation + INSIDE, max: ORDER.target - INSIDE },
+    ),
+  },
+  {
+    key: "breaks",
+    n: "03",
+    title: "It breaks",
+    caption:
+      "It goes the wrong way and keeps going. You are out at 62,900, which your line set the moment you drew the dip, and nobody had to ring you about it.",
+    exit: ORDER.invalidation,
+    exitLabel: "Closed at invalidation",
+    bars: forecast(
+      9152,
+      shape([
+        ORDER.entry, 64_460, 64_070, 64_250, 63_810, 63_940, 63_560, 63_710,
+        63_310, 63_430, 63_060, ORDER.invalidation,
+      ]),
+      195,
+      { min: ORDER.invalidation + INSIDE, max: ORDER.target - INSIDE },
+    ),
+  },
 ];
+
+/** Unrealised P&L at a price, for the readout that runs with the animation. */
+export const pnlAt = (price: number) => (price - ORDER.entry) * ORDER.size;
+
+// --- drawing over your own line --------------------------------------------
+
+/**
+ * The line as first drawn: down, from the entry to 62,400.
+ *
+ * Everything in the redraw section is this shape with its tail lifted. Points
+ * are evenly spaced across the forecast window and the first one is pinned to
+ * the entry, because the start of a curve is where you got in and dragging the
+ * far end must not move it.
+ */
+export const DRAWN_DOWN = [
+  ORDER.entry, 64_720, 64_150, 63_400, 63_600, 62_950, 63_150, 62_620, 62_400,
+];
+
+/** Where the walkthrough drags the tail to. */
+export const DRAG_TO = 66_200;
+/** How far a hand, or an arrow key, may take it. */
+export const DRAG_MIN = 62_100;
+export const DRAG_MAX = 67_000;
+
+/**
+ * Weight per point, so a drag on the tail barely disturbs the start.
+ *
+ * Squared rather than linear: with a linear falloff the whole line slides up
+ * like a rigid bar, which is not what dragging one end of a curve does.
+ */
+const PULL = DRAWN_DOWN.map(
+  (_, i) => (i / (DRAWN_DOWN.length - 1)) ** 2,
+);
+
+/** The drawn line with its last point at `end`. */
+export function lineTo(end: number) {
+  const shift = end - DRAWN_DOWN[DRAWN_DOWN.length - 1];
+  return DRAWN_DOWN.map((price, i) => price + PULL[i] * shift);
+}
+
+/**
+ * The prices a shape implies, by the rule in the FAQ: the end of the curve is
+ * the target, and the furthest it strays the wrong way is the invalidation.
+ * Which way is wrong depends on where the line finishes, so a line dragged
+ * through the entry turns the position around with it.
+ */
+export function levelsFor(prices: number[]) {
+  const target = prices[prices.length - 1];
+  const long = target >= ORDER.entry;
+  const rest = prices.slice(1);
+  const invalidation = long
+    ? Math.min(ORDER.entry, ...rest)
+    : Math.max(ORDER.entry, ...rest);
+  return {
+    target,
+    invalidation,
+    long,
+    reward: Math.abs(target - ORDER.entry) * ORDER.size,
+    risk: Math.abs(invalidation - ORDER.entry) * ORDER.size,
+  };
+}
+
+/** Price going the other way to the line, which is what starts the drag. */
+export const RISING_BARS: Candle[] = (() => {
+  const rand = mulberry32(51_207);
+  const n = 18;
+  const out: Candle[] = [];
+  let open: number = ORDER.entry;
+  for (let i = 0; i < n; i++) {
+    const close = open + 70 + (rand() - 0.38) * 320;
+    const wick = 90 + rand() * 190;
+    out.push({
+      o: open,
+      c: close,
+      h: Math.max(open, close) + rand() * wick,
+      l: Math.min(open, close) - rand() * wick,
+    });
+    open = close;
+  }
+  return out;
+})();
