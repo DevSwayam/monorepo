@@ -195,3 +195,43 @@ export function miniCandles(
     return { o: k.o + adj, h: k.h + adj, l: k.l + adj, c: k.c + adj };
   });
 }
+
+/**
+ * Catmull-rom through a list of plotted points, emitted as one cubic path.
+ *
+ * A polyline through forecast waypoints reads as a machine's idea of a
+ * forecast. This reads as one movement of a hand, which is the whole product.
+ */
+export function smoothPath(pts: { x: number; y: number }[]) {
+  if (pts.length === 0) return "";
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    d +=
+      ` C ${(p1.x + (p2.x - p0.x) / 6).toFixed(1)} ${(p1.y + (p2.y - p0.y) / 6).toFixed(1)}` +
+      ` ${(p2.x - (p3.x - p1.x) / 6).toFixed(1)} ${(p2.y - (p3.y - p1.y) / 6).toFixed(1)}` +
+      ` ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+/**
+ * The other ending. Same entry, same size, price walks down through the
+ * invalidation instead of up to the target. Not something the trader drew, it
+ * is what the market does to the drawing, so it is dashed wherever it is shown.
+ */
+export const BREAK_PATH: { t: number; price: number }[] = [
+  { t: 0, price: ORDER.entry },
+  { t: 0.09, price: 64_520 },
+  { t: 0.2, price: 64_010 },
+  { t: 0.31, price: 64_240 },
+  { t: 0.43, price: 63_540 },
+  { t: 0.55, price: 63_720 },
+  { t: 0.68, price: 63_180 },
+  { t: 0.8, price: 63_390 },
+  { t: 0.9, price: 62_960 },
+  { t: 1, price: ORDER.invalidation },
+];

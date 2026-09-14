@@ -3,6 +3,7 @@ import {
   DRAWN_PATH,
   fmtUsd,
   ORDER,
+  smoothPath,
 } from "./market-data";
 
 const W = 760;
@@ -28,23 +29,11 @@ const y = (p: number) =>
 const step = (SPLIT - PLOT_L) / CANDLES.length;
 const body = Math.max(2.6, step * 0.6);
 
-// Catmull-rom through the drawn points, so it reads as one hand movement
-// rather than a polyline.
 const pts = DRAWN_PATH.map((p) => ({
   x: SPLIT + p.t * (PLOT_R - SPLIT),
   y: y(p.price),
 }));
-let drawn = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-for (let i = 0; i < pts.length - 1; i++) {
-  const p0 = pts[i - 1] ?? pts[i];
-  const p1 = pts[i];
-  const p2 = pts[i + 1];
-  const p3 = pts[i + 2] ?? p2;
-  drawn +=
-    ` C ${(p1.x + (p2.x - p0.x) / 6).toFixed(1)} ${(p1.y + (p2.y - p0.y) / 6).toFixed(1)}` +
-    ` ${(p2.x - (p3.x - p1.x) / 6).toFixed(1)} ${(p2.y - (p3.y - p1.y) / 6).toFixed(1)}` +
-    ` ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-}
+const drawn = smoothPath(pts);
 
 const LEVELS = [
   { price: ORDER.target, label: "Target", accent: true },

@@ -1,3 +1,4 @@
+import { BothEndings } from "@/components/site/both-endings";
 import { Cta } from "@/components/site/cta";
 import { Faq } from "@/components/site/faq";
 import { SiteFooter } from "@/components/site/footer";
@@ -30,6 +31,7 @@ export default function HomePage() {
         <Thesis />
         <WhatItSets />
         <HowItWorks />
+        <BothEndings />
         <Markets />
         <Faq />
         <Cta />
