@@ -20,7 +20,6 @@ import { SoonButton } from "./soon";
    them for small screens, where scrolling costs more. */
 const LINKS = [
   { href: "#how-it-works", label: "How it works" },
-  { href: "#markets", label: "Markets" },
   { href: "#faq", label: "FAQ" },
 ] as const;
 

@@ -4,7 +4,6 @@ import { Faq } from "@/components/site/faq";
 import { SiteFooter } from "@/components/site/footer";
 import { Hero } from "@/components/site/hero";
 import { HowItWorks } from "@/components/site/how-it-works";
-import { Markets } from "@/components/site/markets";
 import { WhatItSets } from "@/components/site/what-it-sets";
 import { SiteNav } from "@/components/site/nav";
 import { Thesis } from "@/components/site/thesis";
@@ -32,7 +31,6 @@ export default function HomePage() {
         <WhatItSets />
         <HowItWorks />
         <BothEndings />
-        <Markets />
         <Faq />
         <Cta />
       </main>

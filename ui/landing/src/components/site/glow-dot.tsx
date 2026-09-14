@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
  * the page's no-elevation rule. This is a light source, not a raised surface.
  *
  * Used sparingly and never twice in a viewport: the end of the live trace in
- * the thesis, and the single hottest market in the grid. It should read as
- * something you notice on a second pass.
+ * the thesis, and the head of the drawn line in the first bento cell. It
+ * should read as something you notice on a second pass.
  */
 export function GlowDot({
   left,

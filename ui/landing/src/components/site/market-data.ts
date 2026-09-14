@@ -154,48 +154,6 @@ export function sparkline(symbol: string, change: number, points = 24): number[]
   return out.map((v, i) => v + delta * (i / (points - 1)));
 }
 
-export type MiniCandle = { o: number; h: number; l: number; c: number };
-
-/**
- * A short OHLC series per market, for the candles on each tile. Seeded from the
- * symbol so every render agrees, and walked so the close finishes on the right
- * side of the open for the 24h change shown next to it. A tile whose candles
- * disagree with its own number is worse than a tile with no candles.
- */
-export function miniCandles(
-  symbol: string,
-  change: number,
-  count = 22,
-): MiniCandle[] {
-  let seed = 0;
-  for (const ch of symbol) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
-  const rand = mulberry32(Math.abs(seed) + 11);
-
-  // Bodies need to be a real fraction of the visible range or the row reads as
-  // a line of dashes, so per-candle movement is deliberately large next to the
-  // overall trend.
-  const vol = Math.max(Math.abs(change), 1.1);
-  const out: MiniCandle[] = [];
-  let price = 100;
-  for (let i = 0; i < count; i++) {
-    const o = price;
-    const c = o + (change / count) * 0.7 + (rand() - 0.5) * vol * 1.9;
-    out.push({
-      o,
-      c,
-      h: Math.max(o, c) + rand() * vol * 0.7,
-      l: Math.min(o, c) - rand() * vol * 0.7,
-    });
-    price = c;
-  }
-  // Nudge the whole series so the last close lands on the stated move.
-  const drift = 100 + change - out[out.length - 1].c;
-  return out.map((k, i) => {
-    const adj = (drift * (i + 1)) / count;
-    return { o: k.o + adj, h: k.h + adj, l: k.l + adj, c: k.c + adj };
-  });
-}
-
 /**
  * Catmull-rom through a list of plotted points, emitted as one cubic path.
  *
