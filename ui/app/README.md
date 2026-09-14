@@ -14,7 +14,8 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The server picks a free port and prints it on startup — open that URL in your
+browser to see the result. See the root README for how ports are chosen.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
