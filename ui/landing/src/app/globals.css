@@ -182,33 +182,34 @@
   }
 }
 
+
 /*
- * skech.trade, ruled editorial grid on a neutral ground.
+ * skech.trade, soft materials on a dark ground.
  *
- * coss ui ships a light, dense app theme. We override its *tokens* here rather
- * than touching any component, so every primitive inherits the surface free.
+ * Same palette as the ruled-grid version this replaces: neutral near-black,
+ * ballpoint blue as the one hue, green/red kept for price direction only.
+ * What changed is the substance.
  *
- * Two rules govern the look:
- *
- *   1. The ground is a true neutral, not a tinted one. A green-cast background
- *      plus a green accent is what makes a dark exchange page read as crypto
- *      boilerplate; on neutral, the same green reads as data.
- *   2. Nothing is rounded. --radius is 0, so every coss primitive squares off
- *      and agrees with the page's ruled grid without per-component overrides.
- *
- * Green marks live and positive state only: the drawn path, an up-tick, the
- * target level, the primary action. Never decoration.
+ *   1. Content sits on rounded surfaces that float over the ground. Structure
+ *      comes from depth and spacing, not from hairlines.
+ *   2. The stack is ground → card → raised → glass, and a surface never sits
+ *      on one of equal weight.
+ *   3. Anything the hand can touch responds on pointer-down. Durations and
+ *      easings come from the motion scale below, never ad hoc.
  */
 .dark {
   /* --- ground ------------------------------------------------------------- */
   --bg: #09090b;
-  --surface: #0e0e11;
-  --surface-2: #151518;
-  --hairline: #212126;
+  /* Four steps up from the ground, evenly spaced, all on the same neutral. */
+  --surface: #121215;
+  --surface-2: #17171b;
+  --surface-3: #1e1e23;
+  --hairline: #26262c;
 
-  /* Square. coss sets --radius in a plain :root rule, which outranks @theme,
-     so it has to be beaten here or every primitive keeps its corners. */
-  --radius: 0rem;
+  /* Rounded, and generously: below about 14px at this scale a card still
+     reads as a rectangle. coss sets --radius in a plain :root rule, which
+     outranks @theme, so it has to be beaten here. */
+  --radius: 1rem;
 
   /* --- ink ---------------------------------------------------------------- */
   --fg: #fafafa;
@@ -226,26 +227,50 @@
    * label reading 6.2:1 on top of it. Verified by scripts/check-contrast.mjs. */
   --brand: #5b8cff;
   --brand-soft: #7ba3ff;
+  --brand-deep: #3b6ae0;
   --brand-dim: #5b8cff22;
 
   /* Market direction. Not part of the accent system: green up and red down is
    * a convention traders read without thinking, and overriding it to stay on
    * palette would make every chart on the page harder to scan. These are only
-   * ever used for price movement, never for UI state.
-   * 8.7:1 and 5.3:1 on --bg. */
+   * ever used for price movement, never for UI state. */
   --up: #22c55e;
   --down: #f04438;
 
-  /* Structural rules, dimmer than a border: these are the page grid. */
-  --grid-dot: #1a1a1f;
-  --grid-line: #141418;
+  /* Structural rules, dimmer than a border: these are chart ruling only. */
+  --grid-dot: #1e1e24;
+  --grid-line: #17171c;
+
+  /* --- materials ---------------------------------------------------------- */
+  /* A surface is a fill, an edge, and a highlight where light catches the top.
+     Tokenised so every card agrees. */
+  --edge: rgb(255 255 255 / 7%);
+  --edge-bright: rgb(255 255 255 / 11%);
+  --sheen: rgb(255 255 255 / 6%);
+
+  /* Two shadows per level: a broad ambient one and a tighter contact one. */
+  --shadow-card:
+    0 1px 2px rgb(0 0 0 / 40%),
+    0 8px 24px -12px rgb(0 0 0 / 60%);
+  --shadow-raised:
+    0 1px 2px rgb(0 0 0 / 40%),
+    0 16px 40px -16px rgb(0 0 0 / 70%);
+  --shadow-float:
+    0 2px 4px rgb(0 0 0 / 40%),
+    0 24px 64px -20px rgb(0 0 0 / 80%);
+  /* Brand-tinted, for the one element per viewport that is genuinely lit. */
+  --shadow-brand: 0 12px 40px -12px rgb(91 140 255 / 45%);
+
+  /* Glass. Bigger surfaces read as thicker: the nav gets the heavier blur. */
+  --glass: rgb(16 16 19 / 72%);
+  --glass-blur: blur(24px) saturate(180%);
 
   /* --- mapped onto coss tokens -------------------------------------------- */
   --background: var(--bg);
   --foreground: var(--fg);
   --card: var(--surface);
   --card-foreground: var(--fg);
-  --popover: var(--surface);
+  --popover: var(--surface-2);
   --popover-foreground: var(--fg);
   --border: var(--hairline);
   --input: var(--hairline);
@@ -256,11 +281,9 @@
   --accent: var(--surface-2);
   --accent-foreground: var(--fg);
 
-  /* Green is the live/positive voice: primary action, up-ticks, the target
-     level, the drawn path. Everything structural stays neutral. */
   --primary: var(--brand);
   --primary-foreground: #060b18;
-  --ring: var(--fg);
+  --ring: var(--brand);
 
   --destructive: var(--color-red-500);
   --destructive-foreground: var(--color-red-400);
@@ -280,6 +303,7 @@
 @theme {
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-deep: var(--brand-deep);
   --color-brand-dim: var(--brand-dim);
   --color-up: var(--up);
   --color-down: var(--down);
@@ -287,42 +311,87 @@
   --color-fg-subtle: var(--fg-subtle);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-edge: var(--edge);
 
-  /* Type scale. Tight grotesque, hard size contrast, nothing in between. */
-  --text-display: clamp(2.5rem, 6vw, 4.75rem);
-  --text-display--line-height: 1;
-  --text-display--letter-spacing: -0.035em;
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-float: var(--shadow-float);
+  --shadow-brand: var(--shadow-brand);
+
+  /*
+   * Type scale.
+   *
+   * Tracking is size-specific, never one value for everything: large text
+   * reads too loose as it grows and wants negative tracking, small text wants
+   * a touch of positive. Leading runs the other way, tight on display sizes
+   * and open on body copy.
+   */
+  --text-display: clamp(2.75rem, 6.5vw, 5.25rem);
+  --text-display--line-height: 0.95;
+  --text-display--letter-spacing: -0.045em;
   --text-display--font-weight: 600;
 
-  --text-heading: clamp(1.75rem, 3.5vw, 2.75rem);
-  --text-heading--line-height: 1.08;
-  --text-heading--letter-spacing: -0.028em;
+  --text-heading: clamp(1.875rem, 3.8vw, 3rem);
+  --text-heading--line-height: 1.05;
+  --text-heading--letter-spacing: -0.035em;
   --text-heading--font-weight: 600;
 
-  --text-title: 1.25rem;
+  --text-title: 1.3125rem;
   --text-title--line-height: 1.3;
-  --text-title--letter-spacing: -0.02em;
-  --text-title--font-weight: 500;
+  --text-title--letter-spacing: -0.022em;
+  --text-title--font-weight: 560;
 
-  --text-body: 1rem;
-  --text-body--line-height: 1.65;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6;
+  --text-body--letter-spacing: -0.01em;
 
   --text-kicker: 0.75rem;
   --text-kicker--line-height: 1.4;
-  /* Was 0.09em, which only works for caps. Sentence case needs almost none. */
-  --text-kicker--letter-spacing: 0.01em;
-  --text-kicker--font-weight: 500;
+  --text-kicker--letter-spacing: 0.02em;
+  --text-kicker--font-weight: 560;
+
+  /* ── Motion scale ───────────────────────────────────────────────────────
+   * From transitions.dev. Every duration and easing on the page references
+   * one of these; nothing hardcodes a number. */
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+  --duration-very-slow: 500ms;
+
+  /* Tailwind resolves its `duration-*` utilities against --transition-duration-*,
+     so the scale is aliased under that name too. One set of numbers, reachable
+     both as a utility and as a var() in hand-written CSS; never two. */
+  --transition-duration-micro: var(--duration-micro);
+  --transition-duration-quick: var(--duration-quick);
+  --transition-duration-fast: var(--duration-fast);
+  --transition-duration-medium: var(--duration-medium);
+  --transition-duration-slow: var(--duration-slow);
+  --transition-duration-very-slow: var(--duration-very-slow);
+
+  /* Critically damped: reaches the target and stops. The house default. */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  /* A little overshoot. Reserved for things a gesture threw, never for a
+     panel that merely faded in. */
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-bounce-strong: cubic-bezier(0.34, 1.8, 0.64, 1);
+
+  --animate-sheen: sheen 8s var(--ease-in-out) infinite;
 }
 
-/* The page column. Its side rules run the full height of the document. */
+/* The page column. */
 @utility container-x {
   margin-inline: auto;
   width: 100%;
-  max-width: 84rem;
+  max-width: 82rem;
 }
 
 @utility measure {
-  max-width: 66ch;
+  max-width: 62ch;
 }
 
 /*
@@ -347,33 +416,330 @@
   background-size: 22px 22px;
 }
 
-/*
- * Unlayered on purpose: unlayered declarations outrank everything inside
- * `@layer utilities`, so this beats the `shadow-*` and `rounded-*` utilities
- * baked into the coss variants without touching a component file.
+/* ---------------------------------------------------------------------------
+ * Materials.
  *
- * Depth comes from rules and ground shifts, never elevation. Focus rings are
- * box-shadows too, so they are exempted.
- */
-:where([data-slot]):not(:focus-visible),
-:where([data-slot])::before {
-  box-shadow: none;
+ * `surface` is the base card: a fill, an edge, a shadow, and a hairline of
+ * light along the top where the material catches the room. The highlight is a
+ * ::before inset ring rather than a border, so it can be brighter at the top
+ * than at the sides the way a real bevel is.
+ * ------------------------------------------------------------------------ */
+@utility surface {
+  position: relative;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--edge),
+    var(--shadow-card);
 }
 
-/* One focus treatment everywhere: 2px, 2px offset. */
+@utility surface-raised {
+  position: relative;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  box-shadow:
+    inset 0 1px 0 0 var(--edge-bright),
+    inset 0 0 0 1px var(--edge),
+    var(--shadow-raised);
+}
+
+/* Translucent chrome. Content scrolls underneath rather than being pushed out
+   of the way by an opaque strip. */
+@utility glass {
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 0 var(--edge-bright),
+    inset 0 0 0 1px var(--edge),
+    var(--shadow-float);
+}
+
+/* The top-edge sheen that makes a surface read as a lit object rather than a
+   filled rectangle. Applied to the element's own ::before so it clips to the
+   parent's radius. */
+@utility sheen-top {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding-top: 1px;
+    background: linear-gradient(180deg, var(--sheen), transparent 40%);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion.
+ *
+ * Two orchestrated moments (the hero line drawing itself, the order landing
+ * after it) plus arrival reveals that fire once on scroll. Everything a hand
+ * can touch responds on pointer-down.
+ * ------------------------------------------------------------------------ */
+
+@keyframes hero-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hero-head-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Arrival: up, into focus, into place. Blur is what keeps a 12px translate
+   from reading as a slide. */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--distance-medium, 12px));
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes sheen {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.hero-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: hero-draw 1.3s var(--ease-smooth-out) 0.25s forwards;
+}
+
+.hero-stroke-head {
+  opacity: 0;
+  animation: hero-head-in var(--duration-slow) var(--ease-smooth-out) 1.35s forwards;
+}
+
+.stroke-draw path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+[data-drawn] .stroke-draw path {
+  animation: hero-draw 1.4s var(--ease-smooth-out) forwards;
+}
+
+/* The order appears once the line has landed: line first, order second,
+   because the line is the order. One fade for the whole rail, not a stagger
+   per row. */
+@keyframes ticket-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ticket-in {
+  opacity: 0;
+  animation: ticket-in var(--duration-very-slow) var(--ease-smooth-out) 1.15s forwards;
+}
+
+/*
+ * The drawable chart (draw-canvas.tsx).
+ *
+ * Bars land one after another so playing a line out reads as time passing
+ * rather than as a result being swapped in. The stagger is carried on a custom
+ * property rather than in the inline `animation` shorthand so that reduced
+ * motion can flatten the delay as well as the duration — the global rule below
+ * only zeroes durations, and a cascade of instant bars is still a cascade.
+ */
+@keyframes dc-bar {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scaleY(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dc-bar {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dc-bar 320ms var(--dc-d, 0ms) both var(--ease-smooth-out);
+}
+
+/* The invitation breathes until it is taken up. */
+@keyframes dc-hint {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.dc-hint {
+  animation: dc-hint 2.6s var(--ease-in-out) infinite;
+}
+
+/* The live dot, so "live" is something you can see rather than only read. */
+/*
+ * "DRAW HERE". The dashed box marches its dashes anticlockwise and the words
+ * breathe, so the empty half of the chart reads as an invitation rather than
+ * as a region that failed to render. Both stop the moment a line exists.
+ */
+@keyframes dc-zone {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+@keyframes dc-call {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.dc-zone {
+  stroke-opacity: 0.3;
+  animation: dc-zone 1.6s var(--ease-linear, linear) infinite;
+}
+
+.dc-call {
+  animation: dc-call 2.6s var(--ease-in-out) infinite;
+}
+
+@keyframes dc-live {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.dc-live {
+  animation: dc-live 2s var(--ease-in-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-bar {
+    animation-delay: 0ms !important;
+  }
+  .dc-hint {
+    animation: none;
+    opacity: 1;
+  }
+  .dc-zone,
+  .dc-call {
+    animation: none;
+  }
+  .dc-live {
+    animation: none;
+  }
+}
+
+/*
+ * Scroll reveal. The element holds its pre-state until the observer marks it
+ * shown, and the stagger index is passed in as --i so a group arrives as one
+ * gesture with a falloff rather than as n separate movements.
+ */
+[data-reveal] {
+  opacity: 0;
+}
+
+[data-reveal][data-shown] {
+  animation: reveal-in var(--duration-very-slow) var(--ease-smooth-out) forwards;
+  animation-delay: calc(var(--i, 0) * var(--duration-stagger));
+}
+
+/*
+ * Press feedback, on pointer-down and not on release. Waiting for `click` to
+ * acknowledge a press is the single thing that makes a web button feel dead.
+ * `transition` only covers the release; the press itself is instant.
+ */
+@utility pressable {
+  transition: transform var(--duration-fast) var(--ease-bounce);
+  &:active {
+    transform: scale(0.96);
+    transition-duration: var(--duration-micro);
+  }
+}
+
+/* Cards that answer the pointer by rising slightly toward it. */
+@utility liftable {
+  transition:
+    transform var(--duration-slow) var(--ease-smooth-out),
+    box-shadow var(--duration-slow) var(--ease-smooth-out),
+    background-color var(--duration-slow) var(--ease-smooth-out);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 0 0 1px var(--edge-bright),
+      var(--shadow-raised);
+  }
+}
+
+/* One focus treatment everywhere. */
 [data-slot="button"] {
   --tw-ring-offset-width: 2px;
 }
 
-:where(a, summary, [tabindex]:not([tabindex="-1"])):not([data-slot]):focus-visible {
-  outline: 2px solid var(--fg);
-  outline-offset: 2px;
+:where(a, summary, button, [tabindex]:not([tabindex="-1"])):not([data-slot]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
     color-scheme: dark;
+  }
+  body {
+    /* Ambient light. Two wide, very low-opacity brand washes so the ground is
+       not a flat field of #09090b, fixed so they do not travel with the
+       scroll and turn into a moving background. */
+    background-image:
+      radial-gradient(
+        ellipse 70% 50% at 50% -10%,
+        color-mix(in srgb, var(--brand) 11%, transparent),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 40% at 85% 12%,
+        color-mix(in srgb, var(--brand) 5%, transparent),
+        transparent
+      );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  /* Optical sizing, where the face carries it. */
+  h1,
+  h2,
+  h3 {
+    font-optical-sizing: auto;
+    text-wrap: balance;
   }
   img,
   svg {
@@ -398,64 +764,20 @@
   color: var(--brand-foreground);
 }
 
-/* ---------------------------------------------------------------------------
- * Motion. One orchestrated moment (the hero line drawing itself) plus strokes
- * that draw on arrival. Nothing fades or slides in per section.
- * ------------------------------------------------------------------------ */
-
-@keyframes hero-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes hero-head-in {
-  to {
-    opacity: 1;
-  }
-}
-
-.hero-stroke {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: hero-draw 1.3s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
-}
-
-.hero-stroke-head {
-  opacity: 0;
-  animation: hero-head-in 0.4s ease-out 1.35s forwards;
-}
-
-.stroke-draw path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-
-[data-drawn] .stroke-draw path {
-  animation: hero-draw 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* The order appears once the line has landed: line first, order second, because
-   the line is the order. One fade for the whole rail, not a stagger per row.
-   Staggering six rows is six separate small movements, which is what made the
-   panel feel chopped. */
-@keyframes ticket-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.ticket-in {
-  opacity: 0;
-  animation: ticket-in 0.6s ease-out 1.15s forwards;
-}
-
+/*
+ * Reduced motion is not "no feedback", it is a gentler, non-vestibular
+ * equivalent: reveals become plain opacity, presses stop scaling, and the
+ * drawn strokes land instantly instead of animating.
+ */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  [data-reveal] {
+    opacity: 1;
+  }
+  [data-reveal][data-shown] {
+    animation: none;
   }
   *,
   *::before,
@@ -463,5 +785,13 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }

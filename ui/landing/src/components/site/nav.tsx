@@ -1,106 +1,48 @@
-"use client";
-
-import { MenuIcon } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetClose,
-  SheetPanel,
-  SheetPopup,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { LogoMark } from "./logo";
 import { SoonButton } from "./soon";
 
-/* Section links are gone from the bar on purpose: the page is short enough to
-   scroll, and a four-item menu on a two-action page is chrome. The sheet keeps
-   them for small screens, where scrolling costs more. */
-const LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#faq", label: "FAQ" },
-] as const;
-
 /**
- * Sticky, ruled, square. Sits on the same page column as every band below, so
- * its side rules line up with the grid rather than floating over it.
+ * A floating glass bar, not a fixed strip.
+ *
+ * The page scrolls underneath it rather than being pushed out of the way by an
+ * opaque band, which is what the translucency is for. It is inset from all
+ * three edges so it reads as an object on the page rather than as browser
+ * chrome.
+ *
+ * Two elements, and that is the whole bar: the mark, and the one action. There
+ * are no section links, so there is no menu to collapse into on small screens
+ * either — the page is short enough to scroll, and the hero's own "See it
+ * work" button covers the one jump worth offering.
+ *
+ * `pointer-events-none` on the wrapper, with the bar opting back in, keeps the
+ * empty gutters either side from swallowing clicks meant for the hero behind
+ * them.
  */
 export function SiteNav() {
   return (
-    <header className="sticky top-0 z-50 border-border border-b bg-background/90 backdrop-blur-sm">
-      <div className="container-x flex h-14 items-center justify-between gap-4 border-border border-x px-5 md:px-6">
-        <Link
-          aria-label="skech home"
-          className="flex items-center gap-2.5 text-foreground"
-          href="/"
-        >
-          <LogoMark className="h-5 w-6" />
-          {/* It is "skech", one t. Never "sketch". */}
-          <span className="font-semibold text-[0.9375rem] tracking-[-0.02em]">
-            skech
-          </span>
-        </Link>
-
-
-        <div className="flex items-center gap-2">
-          <SoonButton
-            className="hidden h-9 text-fg-muted hover:text-foreground sm:inline-flex"
-            detail="Accounts open with the public testnet."
-            size="sm"
-            variant="ghost"
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-4 pt-3 sm:px-6 sm:pt-4">
+      <div className="container-x pointer-events-auto">
+        <div className="glass flex h-14 items-center justify-between gap-4 rounded-full py-2 pr-2 pl-5">
+          <Link
+            aria-label="skech home"
+            className="pressable flex items-center gap-2.5 text-foreground"
+            href="/"
           >
-            Log in
-          </SoonButton>
+            <LogoMark className="h-5 w-6" />
+            {/* It is "skech", one t. Never "sketch". */}
+            <span className="font-semibold text-[0.9375rem] tracking-[-0.025em]">
+              skech
+            </span>
+          </Link>
+
           <SoonButton
-            className="h-9"
-            detail="Trading opens with the public testnet."
+            className="pressable h-10 rounded-full bg-linear-to-b from-brand-soft to-brand px-5 shadow-brand sm:h-10"
+            detail="Opens with early access."
             size="sm"
           >
-            Start sketching
+            Start drawing
           </SoonButton>
-
-          <Sheet>
-            <SheetTrigger
-              render={
-                <Button
-                  aria-label="Open menu"
-                  className="md:hidden"
-                  size="icon"
-                  variant="ghost"
-                />
-              }
-            >
-              <MenuIcon />
-            </SheetTrigger>
-            <SheetPopup className="w-[min(20rem,85vw)]" side="right">
-              <SheetPanel className="flex flex-col gap-1 pt-2">
-                <SheetTitle className="sr-only">Menu</SheetTitle>
-                {LINKS.map((link) => (
-                  <SheetClose
-                    key={link.href}
-                    render={
-                      <Link
-                        className="px-2 py-2.5 text-body hover:bg-accent"
-                        href={link.href}
-                      />
-                    }
-                  >
-                    {link.label}
-                  </SheetClose>
-                ))}
-                <Separator className="my-3" />
-                <SoonButton
-                  className="w-full"
-                  detail="Trading opens with the public testnet."
-                  size="lg"
-                >
-                  Start sketching
-                </SoonButton>
-              </SheetPanel>
-            </SheetPopup>
-          </Sheet>
         </div>
       </div>
     </header>

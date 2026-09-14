@@ -1,12 +1,11 @@
-import { BothEndings } from "@/components/site/both-endings";
 import { Cta } from "@/components/site/cta";
 import { Faq } from "@/components/site/faq";
 import { SiteFooter } from "@/components/site/footer";
 import { Hero } from "@/components/site/hero";
 import { HowItWorks } from "@/components/site/how-it-works";
-import { WhatItSets } from "@/components/site/what-it-sets";
+import { Redraw } from "@/components/site/redraw";
+import { WorkedExample } from "@/components/site/worked-example";
 import { SiteNav } from "@/components/site/nav";
-import { Thesis } from "@/components/site/thesis";
 
 /**
  * Rendered per request rather than at build time, so the headline picks a new
@@ -19,7 +18,7 @@ export default function HomePage() {
   return (
     <>
       <a
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-60 focus:rounded-full focus:bg-primary focus:px-5 focus:py-2.5 focus:font-medium focus:text-primary-foreground focus:shadow-brand"
         href="#main"
       >
         Skip to content
@@ -27,10 +26,9 @@ export default function HomePage() {
       <SiteNav />
       <main id="main">
         <Hero />
-        <Thesis />
-        <WhatItSets />
         <HowItWorks />
-        <BothEndings />
+        <WorkedExample />
+        <Redraw />
         <Faq />
         <Cta />
       </main>

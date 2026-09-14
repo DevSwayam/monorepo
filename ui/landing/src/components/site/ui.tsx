@@ -1,37 +1,73 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Reveal } from "./motion";
 
 /**
  * The page grid.
  *
- * Every section is a full-bleed band closed by a rule, wrapping the page column
- * whose side rules run the entire height of the document. Structure comes from
- * rules rather than from gaps and rounded cards, so sections read as a
- * continuous ruled sheet, a spec sheet, which is the right register for an
- * exchange.
+ * Sections are open runs of the page column with generous vertical room, not
+ * bands closed by rules. Structure comes from the surfaces inside them: content
+ * sits on rounded cards that float over the ground with their own light, and
+ * the space between cards does the separating that hairlines used to do.
+ *
+ * Nothing here draws a border. If two things need to read as separate, they get
+ * separate surfaces.
  */
-export function Band({
+export function Section({
   children,
   className,
   id,
-  bleed = false,
 }: {
   children: ReactNode;
   className?: string;
   id?: string;
-  /** Skip the page column, for content that should run edge to edge. */
-  bleed?: boolean;
 }) {
   return (
-    <section className="scroll-mt-14 border-border border-b" id={id}>
-      {bleed ? (
-        children
-      ) : (
-        <div className={cn("container-x border-border border-x", className)}>
-          {children}
-        </div>
-      )}
+    <section className="scroll-mt-28" id={id}>
+      <div
+        className={cn(
+          "container-x px-4 py-14 sm:px-6 md:py-20 lg:px-8 lg:py-28",
+          className,
+        )}
+      >
+        {children}
+      </div>
     </section>
+  );
+}
+
+/**
+ * The base material: a rounded surface with an edge, a shadow, and a hairline
+ * of light along the top.
+ *
+ * `raised` is the next step up and adds a top-to-bottom gradient, so a card on
+ * a card still reads as two objects. Don't nest two raised surfaces.
+ */
+export function Panel({
+  children,
+  className,
+  raised = false,
+  interactive = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  raised?: boolean;
+  /** Rises toward the pointer on hover. For cards that are worth exploring. */
+  interactive?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        raised ? "surface-raised" : "surface",
+        // Radius lives here, not in the utility, so a caller can pass a
+        // different `rounded-*` and have tailwind-merge honour it.
+        "sheen-top overflow-hidden rounded-2xl",
+        interactive && "liftable",
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -47,16 +83,13 @@ export function Headline({
   id?: string;
 }) {
   return (
-    <Tag
-      className={cn("text-balance text-heading text-foreground", className)}
-      id={id}
-    >
+    <Tag className={cn("text-heading text-foreground", className)} id={id}>
       {children}
     </Tag>
   );
 }
 
-/** Small mono label above a headline. Sentence case, never caps. */
+/** Small mono label, for figures inside a card. Sentence case, never caps. */
 export function Kicker({
   children,
   className,
@@ -65,52 +98,60 @@ export function Kicker({
   className?: string;
 }) {
   return (
-    <p
-      className={cn(
-        "font-mono text-fg-subtle text-kicker",
-        className,
-      )}
-    >
+    <p className={cn("font-mono text-fg-subtle text-kicker", className)}>
       {children}
     </p>
   );
 }
 
-/** Kicker + headline, closed by a rule. Opens most sections. */
+/**
+ * Headline and an optional lead. Opens most sections.
+ *
+ * Centred by default: with sections now reading as floating cards rather than
+ * as a ruled sheet, a left-aligned header leaves the right half of the column
+ * empty above a full-width card and the page looks like it lost something.
+ */
 export function SectionHead({
-  kicker,
   children,
   lead,
   className,
   id,
+  align = "center",
 }: {
-  kicker: string;
   children: ReactNode;
   lead?: ReactNode;
   className?: string;
   id?: string;
+  align?: "center" | "left";
 }) {
+  const centred = align === "center";
+
   return (
-    <div
+    <Reveal
       className={cn(
-        "border-border border-b px-5 py-12 md:px-10 md:py-16",
+        "mb-10 flex flex-col md:mb-14",
+        centred ? "items-center text-center" : "items-start",
         className,
       )}
     >
-      <Kicker>{kicker}</Kicker>
-      {/* No tight character cap here. text-balance already evens the lines out,
-          and a fixed 22ch forced short headlines to wrap at arbitrary places. */}
-      <Headline className="mt-4 max-w-[32ch]" id={id}>
+      <Headline className={cn("max-w-[20ch]", !centred && "mt-0")} id={id}>
         {children}
       </Headline>
       {lead ? (
-        <p className="mt-5 max-w-[56ch] text-body text-fg-muted">{lead}</p>
+        <p
+          className={cn(
+            "mt-5 text-body text-fg-muted",
+            centred ? "max-w-[54ch]" : "max-w-[56ch]",
+          )}
+        >
+          {lead}
+        </p>
       ) : null}
-    </div>
+    </Reveal>
   );
 }
 
-/** A ruled cell in a section's grid. Rules on the inside, never the outside. */
+/** A cell inside a panel's grid. Padding only; separation is the panel's job. */
 export function Cell({
   children,
   className,
@@ -119,9 +160,7 @@ export function Cell({
   className?: string;
 }) {
   return (
-    <div className={cn("px-5 py-8 md:px-8 md:py-10", className)}>
-      {children}
-    </div>
+    <div className={cn("p-6 md:p-8", className)}>{children}</div>
   );
 }
 
@@ -142,12 +181,12 @@ export function Placeholder({
     <div
       aria-label={`${note} placeholder`}
       className={cn(
-        "relative flex items-center justify-center bg-surface bg-grid",
+        "relative flex items-center justify-center rounded-xl bg-surface-2 bg-grid",
         className,
       )}
       role="img"
     >
-      <div className="flex flex-col items-center gap-1.5 bg-background px-4 py-3 text-center">
+      <div className="flex flex-col items-center gap-1.5 rounded-lg bg-background px-4 py-3 text-center shadow-card">
         <span className="font-mono text-foreground text-xs">{file}</span>
         <span className="text-fg-subtle text-xs">{note}</span>
       </div>

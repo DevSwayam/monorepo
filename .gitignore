@@ -37,3 +37,8 @@ yarn-error.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# agent skills (reinstall with `npx skills add`)
+.agents/
+.claude/
+skills-lock.json
