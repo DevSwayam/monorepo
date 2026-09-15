@@ -389,16 +389,7 @@ export function DrawCanvas({
   const [feed, setFeed] = useState<Candle[]>(() => seed.slice(-HISTORY));
   const [run, setRun] = useState<Candle[]>([]);
   const [entry, setEntry] = useState(seedPrice);
-  type Result = {
-    won: boolean;
-    pnl: number;
-    /** "long", "short", or how many legs the drawing turned into. */
-    side: string;
-    entry: number;
-    exit: number;
-    fees: number;
-    liquidated: boolean;
-  };
+  type Result = { won: boolean; pnl: number; liquidated: boolean };
   const [result, setResult] = useState<Result | null>(null);
   const [note, setNote] = useState<string | null>(null);
   /**
@@ -528,20 +519,7 @@ export function DrawCanvas({
       // canvas does not clear itself: a trade that wiped the board the instant
       // it ended was a trade nobody got to read the end of.
       const finish = (net: number, bk: ReturnType<typeof settle>) => {
-        setResult({
-          won: net >= 0,
-          pnl: net,
-          side:
-            sh.legs.length === 1
-              ? sh.legs[0].dir > 0
-                ? "long"
-                : "short"
-              : `${sh.legs.length} legs`,
-          entry,
-          exit: bar.c,
-          fees: bk.fees,
-          liquidated: bk.liquidated,
-        });
+        setResult({ won: net >= 0, pnl: net, liquidated: bk.liquidated });
         setFeed((f) => [...f, ...next].slice(-HISTORY));
         setRun([]);
         setPts([]);
@@ -989,37 +967,7 @@ export function DrawCanvas({
                 {result.won ? "+" : "−"}${fmtUsd(Math.abs(result.pnl))}
               </p>
 
-              {/* The receipt. Three lines of prose explaining the number is
-                  worse than the working that produced it, and the chart it
-                  came off is behind a scrim. */}
-              <dl className="mt-5 space-y-2 rounded-xl bg-background/60 px-4 py-3 shadow-[inset_0_0_0_1px_var(--edge)]">
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-fg-subtle text-xs">You drew</dt>
-                  <dd className="font-mono text-foreground text-xs">
-                    {result.side}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-fg-subtle text-xs">In, then out</dt>
-                  <dd className="font-mono text-foreground text-xs tabular-nums">
-                    {fmtUsd(result.entry)} → {fmtUsd(result.exit)}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-fg-subtle text-xs">Fees</dt>
-                  <dd className="font-mono text-fg-muted text-xs tabular-nums">
-                    −${fmtUsd(result.fees, 2)}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-fg-subtle text-xs">Stake</dt>
-                  <dd className="font-mono text-fg-muted text-xs tabular-nums">
-                    ${MARGIN} at {LEVERAGE}×
-                  </dd>
-                </div>
-              </dl>
-
-              <div className="mt-5 flex flex-col gap-2">
+              <div className="mt-6 flex flex-col gap-2">
                 <SoonButton
                   className="pressable h-11 w-full rounded-full bg-linear-to-b from-brand-soft to-brand text-base shadow-brand sm:h-11 sm:text-base"
                   detail="Drawing with real money opens with the public testnet."
