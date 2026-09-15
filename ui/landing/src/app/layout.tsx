@@ -28,9 +28,9 @@ const SITE = "https://skech.trade";
 
 const TITLE = "skech | Draw The Chart, Trade The Line";
 const DESCRIPTION =
-  "A perpetuals exchange where you open a position by drawing the price path you expect. Entry, target and invalidation come off the curve you drew.";
+  "Draw where you think the price is going, and that drawing is the trade. No order types to learn.";
 const SHORT =
-  "Open a position by drawing the price path you expect. The line is the order.";
+  "Draw where you think the price is going. That drawing is the trade.";
 
 // Placeholder until the real account exists. Update both fields together.
 const X_HANDLE = "@skechtrade";

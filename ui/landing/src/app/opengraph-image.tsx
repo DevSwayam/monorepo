@@ -81,7 +81,7 @@ export default async function OpengraphImage() {
               lineHeight: 1.5,
             }}
           >
-            Perpetuals you open by drawing the price path you expect.
+            Draw where you think the price is going. That&rsquo;s the trade.
           </span>
         </div>
 

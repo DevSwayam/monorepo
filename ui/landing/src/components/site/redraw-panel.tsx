@@ -1,5 +1,7 @@
 "use client";
 
+import { useInView, useReducedMotion } from "./motion";
+import { Candles, RailRow, spacing } from "./chart";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -12,8 +14,10 @@ import {
   levelsFor,
   lineTo,
   ORDER,
+  pnlAt,
   RISING_BARS,
   smoothPath,
+  STAKE,
 } from "./market-data";
 
 const W = 760;
@@ -66,39 +70,60 @@ const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 const T_REACH = 300;
 const T_GRAB = 1000;
 const T_BARS_0 = 1100;
-const T_BARS_1 = 5400;
+const T_BARS_1 = 5800;
 const T_PULL = 1300;
-const T_LANDED = 5800;
-const T_LET_GO = 6200;
-const DEMO_MS = 7400;
+const T_LANDED = 6400;
+const T_LET_GO = 6800;
+const DEMO_MS = 8200;
 const KEY_STEP = 100;
+
+/**
+ * The chase, as fractions of the distance from the drawn end up to DRAG_TO.
+ *
+ * A hand chasing a market does not travel in one smooth arc. It holds the old
+ * view a beat too long, yanks up past the candles, loses its nerve and drops
+ * most of the way back, then goes again — the swings shrinking each time until
+ * it settles. Every waypoint is one of those decisions, and easing between
+ * them puts a full stop and a reversal where a real hand has one.
+ *
+ * Values above 1 are overshoot. The downward room is small on purpose: the
+ * line starts only DRAG_MIN above the floor, so the hunt has to happen inside
+ * the upward travel rather than below the start. The track ends on exactly 1
+ * so the walkthrough always lands on the price the rail is written for.
+ */
+const CHASE = [
+  { at: 0, to: 0 },
+  { at: 0.07, to: -0.075 },
+  { at: 0.16, to: 0.42 },
+  { at: 0.25, to: 0.08 },
+  { at: 0.35, to: 0.72 },
+  { at: 0.44, to: 0.3 },
+  { at: 0.54, to: 1.05 },
+  { at: 0.63, to: 0.58 },
+  { at: 0.72, to: 1.14 },
+  { at: 0.8, to: 0.8 },
+  { at: 0.88, to: 1.08 },
+  { at: 0.94, to: 0.94 },
+  { at: 1, to: 1 },
+];
+
+/** Where along the chase the hand is at progress `p`, 0 to 1. */
+function chaseAt(p: number) {
+  if (p <= 0) return CHASE[0].to;
+  if (p >= 1) return CHASE[CHASE.length - 1].to;
+  let i = 0;
+  while (i < CHASE.length - 2 && p > CHASE[i + 1].at) {
+    i++;
+  }
+  const from = CHASE[i];
+  const to = CHASE[i + 1];
+  return (
+    from.to + (to.to - from.to) * ease((p - from.at) / (to.at - from.at))
+  );
+}
 /** Drawn levels land on a round number, the way a chart tool snaps. */
 const TICK = 10;
 const snap = (v: number) => Math.round(v / TICK) * TICK;
-
-function Line({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <span className="text-fg-subtle text-sm">{label}</span>
-      <span
-        className={cn(
-          "font-mono text-sm tabular-nums",
-          tone ?? "text-foreground",
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
 
 /**
  * §7, the line is not a commitment, shown by moving it.
@@ -117,31 +142,11 @@ export function RedrawPanel() {
   const [held, setHeld] = useState<number | null>(null);
   const [taken, setTaken] = useState(false);
   const [grabbing, setGrabbing] = useState(false);
-  const [inView, setInView] = useState(false);
-  const [reduced, setReduced] = useState(false);
   const [replay, setReplay] = useState(0);
 
-  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const [ref, inView] = useInView<HTMLDivElement>(0.3);
   const plot = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduced(mql.matches);
-    sync();
-    mql.addEventListener("change", sync);
-    return () => mql.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.3 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!inView || reduced || taken) return;
@@ -157,14 +162,35 @@ export function RedrawPanel() {
   }, [inView, reduced, taken, replay]);
 
   // --- where the line ends right now ---------------------------------------
-  const demoEnd =
-    DRAWN_DOWN[DRAWN_DOWN.length - 1] +
-    (DRAG_TO - DRAWN_DOWN[DRAWN_DOWN.length - 1]) *
-      ease(clamp01((t - T_PULL) / (T_LANDED - T_PULL)));
+  const from = DRAWN_DOWN[DRAWN_DOWN.length - 1];
+  const travel = DRAG_TO - from;
+  const pull = clamp01((t - T_PULL) / (T_LANDED - T_PULL));
+  // A hand on a handle is never perfectly still. Two frequencies so it reads
+  // as a tremor rather than a wave, and it decays to nothing by the landing so
+  // the walkthrough still finishes exactly on DRAG_TO.
+  const gripped = t >= T_GRAB && t < T_LET_GO;
+  const tremor = gripped
+    ? travel *
+      0.005 *
+      (1 - pull) *
+      (Math.sin(t / 70) + 0.5 * Math.sin(t / 31))
+    : 0;
+  const demoEnd = Math.min(
+    DRAG_MAX,
+    Math.max(DRAG_MIN, from + travel * chaseAt(pull) + tremor),
+  );
   const end = held ?? (reduced ? DRAG_TO : demoEnd);
 
   const shape = lineTo(end);
   const level = levelsFor(shape);
+  // Quoted the way the canvas quotes it: a $100 stake trading like $500. A
+  // line that never dips sets no floor, so the whole stake is at risk — the
+  // same reason the canvas refuses to print "$0" there.
+  const win = Math.abs(pnlAt(level.target));
+  const lose =
+    Math.abs(level.invalidation - ORDER.entry) / ORDER.entry < 0.002
+      ? STAKE
+      : Math.min(STAKE, Math.abs(pnlAt(level.invalidation)));
   const pts = shape.map((price, i) => ({ x: xOf(i), y: y(price) }));
   const handle = pts[pts.length - 1];
 
@@ -211,17 +237,17 @@ export function RedrawPanel() {
   };
 
   const caption = taken
-    ? "Same entry, same size, same position. All that moved is the pair of prices the shape sets."
+    ? "Same money in, same trade. Only the two prices that end it moved."
     : t < T_PULL
-      ? "This is the line you drew. Down, from where you got in."
+      ? "This is the line you drew — down, from where you got in."
       : t < T_LET_GO
-        ? "Price is going the other way, so you chase it. Both numbers move as you pull."
-        : "Your turn. Drag the handle, or put focus on it and use the arrow keys.";
+        ? "Price went the other way. Pull the line up and both numbers follow."
+        : "Your turn — drag the handle, or use the arrow keys.";
 
   return (
-    <div className="border-border border-t bg-surface" ref={ref}>
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="px-4 py-6 md:px-6 md:py-8">
+    <div ref={ref}>
+      <div className="grid gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_18rem] md:p-4">
+        <div className="overflow-hidden rounded-xl bg-background/60 px-3 py-5 shadow-[inset_0_0_0_1px_var(--edge)] md:px-5 md:py-7">
           <div className="relative" ref={plot}>
             <svg
               aria-hidden="true"
@@ -293,64 +319,24 @@ export function RedrawPanel() {
                 y2={y(level.invalidation)}
               />
 
-              {HISTORY.map((c, i) => {
-                const cx = PLOT_L + i * hstep + hstep / 2;
-                const rising = c.c >= c.o;
-                const top = y(Math.max(c.o, c.c));
-                const bottom = y(Math.min(c.o, c.c));
-                return (
-                  <g
-                    fill={rising ? "var(--up)" : "var(--down)"}
-                    key={i}
-                    opacity="0.5"
-                    stroke={rising ? "var(--up)" : "var(--down)"}
-                  >
-                    <line
-                      strokeWidth="0.9"
-                      x1={cx}
-                      x2={cx}
-                      y1={y(c.h)}
-                      y2={y(c.l)}
-                    />
-                    <rect
-                      height={Math.max(1, bottom - top)}
-                      width={hbody}
-                      x={cx - hbody / 2}
-                      y={top}
-                    />
-                  </g>
-                );
-              })}
+              <Candles
+                bars={HISTORY}
+                body={hbody}
+                opacity="0.5"
+                x={spacing(PLOT_L, hstep)}
+                y={y}
+              />
 
               {/* price, going the other way to the line */}
-              {bars.map((c, i) => {
-                const cx = SPLIT + i * fstep + fstep / 2;
-                const rising = c.c >= c.o;
-                const top = y(Math.max(c.o, c.c));
-                const bottom = y(Math.min(c.o, c.c));
-                return (
-                  <g
-                    fill={rising ? "var(--up)" : "var(--down)"}
-                    key={i}
-                    opacity="0.85"
-                    stroke={rising ? "var(--up)" : "var(--down)"}
-                  >
-                    <line
-                      strokeWidth="1"
-                      x1={cx}
-                      x2={cx}
-                      y1={y(c.h)}
-                      y2={y(c.l)}
-                    />
-                    <rect
-                      height={Math.max(1.2, bottom - top)}
-                      width={fbody}
-                      x={cx - fbody / 2}
-                      y={top}
-                    />
-                  </g>
-                );
-              })}
+              <Candles
+                bars={bars}
+                body={fbody}
+                minBody={1.2}
+                opacity="0.85"
+                wick={1}
+                x={spacing(SPLIT, fstep)}
+                y={y}
+              />
 
               {/* where the line started, so you can see what you changed */}
               <path
@@ -394,7 +380,7 @@ export function RedrawPanel() {
               aria-valuemax={DRAG_MAX}
               aria-valuemin={DRAG_MIN}
               aria-valuenow={Math.round(end)}
-              aria-valuetext={`Target ${fmtUsd(snap(end))}`}
+              aria-valuetext={`Aiming for ${fmtUsd(snap(end))}`}
               className={cn(
                 "-translate-x-1/2 -translate-y-1/2 absolute size-3 touch-none bg-brand outline-offset-4 transition-[box-shadow,transform] md:size-3.5",
                 grabbing || demoGrab
@@ -454,7 +440,7 @@ export function RedrawPanel() {
               className="-translate-y-full pointer-events-none absolute pb-1 pl-0.5 text-fg-subtle text-xs"
               style={at(PLOT_L, y(level.target))}
             >
-              Target
+              Aiming for
             </span>
             <span
               className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-brand text-xs tabular-nums"
@@ -466,7 +452,7 @@ export function RedrawPanel() {
               className="-translate-y-full pointer-events-none absolute pb-1 pl-0.5 text-fg-subtle text-xs"
               style={at(PLOT_L, ENTRY_Y)}
             >
-              Entry
+              You&rsquo;re in at
             </span>
             <span
               className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-fg-subtle text-xs tabular-nums"
@@ -478,7 +464,7 @@ export function RedrawPanel() {
               className="-translate-y-full pointer-events-none absolute pb-1 pl-0.5 text-fg-subtle text-xs"
               style={at(PLOT_L, y(level.invalidation))}
             >
-              Invalidation
+              You&rsquo;re out at
             </span>
             <span
               className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-fg-subtle text-xs tabular-nums"
@@ -489,40 +475,40 @@ export function RedrawPanel() {
           </div>
         </div>
 
-        <aside className="flex flex-col gap-7 border-border p-6 lg:border-l max-lg:border-t">
+        <aside className="flex flex-col gap-7 rounded-xl bg-surface-2 p-5 shadow-[inset_0_0_0_1px_var(--edge)]">
           <div className="flex items-baseline justify-between">
             <span className="font-mono text-fg-subtle text-kicker">
-              BTC-PERP
+              Bitcoin
             </span>
-            <span className="font-mono text-brand text-xs">
-              {level.long ? "long" : "short"} {ORDER.leverage}×
+            <span className="rounded-full bg-brand/14 px-2.5 py-1 font-mono text-brand text-xs">
+              {level.long ? "up" : "down"} {ORDER.leverage}×
             </span>
           </div>
 
           <div className="space-y-3.5">
-            <Line label="Entry" value={fmtUsd(ORDER.entry, 2)} />
-            <Line label="Size" value={`${ORDER.size} BTC`} />
+            <RailRow label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
+            <RailRow label="You put in" value={`$${STAKE}`} />
           </div>
 
           <div className="space-y-3.5">
-            <Line
-              label="Target"
+            <RailRow
+              label="Aiming for"
               tone="text-brand"
               value={fmtUsd(snap(level.target))}
             />
-            <Line label="Invalidation" value={fmtUsd(snap(level.invalidation))} />
+            <RailRow label="You're out at" value={fmtUsd(snap(level.invalidation))} />
           </div>
 
           <div className="space-y-3.5">
-            <Line
-              label="If it runs"
+            <RailRow
+              label="If it works"
               tone="text-up"
-              value={`+$${fmtUsd(snap(level.reward))}`}
+              value={`+$${fmtUsd(win)}`}
             />
-            <Line
-              label="If it breaks"
-              tone={level.risk < 1 ? "text-fg-muted" : "text-down"}
-              value={level.risk < 1 ? "$0" : `−$${fmtUsd(snap(level.risk))}`}
+            <RailRow
+              label="Most you lose"
+              tone="text-down"
+              value={`−$${fmtUsd(lose)}`}
             />
           </div>
 
@@ -535,12 +521,12 @@ export function RedrawPanel() {
         </aside>
       </div>
 
-      <div className="flex items-center justify-between gap-4 border-border border-t px-5 py-4 md:px-6">
+      <div className="flex items-center justify-between gap-4 px-5 pb-4 md:px-6">
         <span className="font-mono text-fg-subtle text-xs">
           drag the square on the end of the line
         </span>
         <button
-          className="cursor-pointer font-mono text-fg-subtle text-xs transition-colors hover:text-foreground"
+          className="pressable cursor-pointer rounded-full bg-surface-2 px-3.5 py-1.5 font-mono text-fg-subtle text-xs shadow-[inset_0_0_0_1px_var(--edge)] transition-colors duration-fast ease-smooth-out hover:text-foreground"
           onClick={() => {
             setTaken(false);
             setHeld(null);

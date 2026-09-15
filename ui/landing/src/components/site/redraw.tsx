@@ -1,24 +1,33 @@
 import { RedrawPanel } from "./redraw-panel";
-import { Band, SectionHead } from "./ui";
+import { Reveal } from "./motion";
+import { Panel, Section, SectionHead } from "./ui";
 
 /**
  * §7, the line is not a commitment.
  *
  * Its own section because it is its own idea, and because folding it into the
  * three endings meant one scenario had to carry two lessons at once.
+ *
+ * The lead is one imperative sentence. It used to be four, explaining what
+ * stays put and what follows and which way the position turns — all of which
+ * the panel underneath demonstrates the moment you touch it. Copy that narrates
+ * an interactive demo is copy competing with it.
  */
 export function Redraw() {
   return (
-    <Band id="redraw">
+    <Section id="redraw">
       <SectionHead
         id="redraw-title"
-        kicker="Change your mind"
-        lead="You called it down and price went the other way, so you chase it. Grab the square on the end of the line and pull it up after the candles: entry and size stay put, the two prices that end the trade follow the shape, and dragging the end past your entry turns the position round. Have a go yourself."
+        lead="Changed your mind? Drag the line somewhere else. It updates your trade, and costs nothing."
       >
         Nothing you draw is final.
       </SectionHead>
 
-      <RedrawPanel />
-    </Band>
+      <Reveal>
+        <Panel raised>
+          <RedrawPanel />
+        </Panel>
+      </Reveal>
+    </Section>
   );
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,27 +27,26 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-/** Mark plus wordmark. It is "skech", one t. Never "sketch". */
-export function Logo({
-  className,
-  markClassName = "h-7 w-9",
-  wordmarkClassName,
-}: {
-  className?: string;
-  markClassName?: string;
-  wordmarkClassName?: string;
-}) {
+/**
+ * The mark and the wordmark, linking home. Used by the nav and the footer,
+ * which had a byte-identical copy each — including the spelling, which is the
+ * one thing on the page that must never drift.
+ */
+export function LogoLink({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <LogoMark className={markClassName} />
-      <span
-        className={cn(
-          "font-semibold text-[1.0625rem] tracking-[-0.02em]",
-          wordmarkClassName,
-        )}
-      >
+    <Link
+      aria-label="skech home"
+      className={cn(
+        "pressable flex items-center gap-2.5 text-foreground",
+        className,
+      )}
+      href="/"
+    >
+      <LogoMark className="h-5 w-6" />
+      {/* It is "skech", one t. Never "sketch". */}
+      <span className="font-semibold text-[0.9375rem] tracking-[-0.025em]">
         skech
       </span>
-    </span>
+    </Link>
   );
 }

@@ -34,15 +34,21 @@ export function HeadlineMix({ className }: { className?: string }) {
         return (
           <span className="block" key={words.join(" ")}>
             {words.map((word, i) => (
-              <span
-                className={
-                  i === pixelAt
-                    ? "font-pixel text-[0.86em] tracking-normal"
-                    : undefined
-                }
-                key={word}
-              >
-                {word}
+              // The inter-word space is set outside the span on purpose. The
+              // pixel face carries a much wider space than the grotesque, so a
+              // space caught inside a swapped word opens a visible hole next to
+              // it — and which word is swapped changes on every request, so the
+              // hole moves around the headline.
+              <span key={word}>
+                <span
+                  className={
+                    i === pixelAt
+                      ? "font-pixel text-[0.86em] tracking-normal"
+                      : undefined
+                  }
+                >
+                  {word}
+                </span>
                 {i < words.length - 1 ? " " : null}
               </span>
             ))}

@@ -11,15 +11,6 @@
  * identical geometry, a random walk evaluated twice would hydrate mismatched.
  */
 
-export const MARKET = {
-  symbol: "BTC-PERP",
-  last: 64_182.5,
-  change24h: 2.41,
-  funding: 0.0041,
-  markPrice: 64_180.0,
-} as const;
-
-/** The order the drawn path produces. 5× long, entered at the last price. */
 export const ORDER = {
   side: "long",
   entry: 64_180,
@@ -31,20 +22,9 @@ export const ORDER = {
   liquidation: 51_665,
 } as const;
 
-const notional = ORDER.entry * ORDER.size;
-export const DERIVED = {
-  notional,
-  margin: notional / ORDER.leverage,
-  reward: (ORDER.target - ORDER.entry) * ORDER.size,
-  risk: (ORDER.entry - ORDER.invalidation) * ORDER.size,
-  get rr() {
-    return this.reward / this.risk;
-  },
-};
-
 // --- series ----------------------------------------------------------------
 
-export function mulberry32(seed: number) {
+function mulberry32(seed: number) {
   let a = seed;
   return () => {
     a |= 0;
@@ -113,46 +93,6 @@ export const DRAWN_PATH: { t: number; price: number }[] = [
 
 export const fmtUsd = (n: number, dp = 0) =>
   n.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
-
-export const fmtSigned = (n: number, dp = 2) =>
-  `${n >= 0 ? "+" : "−"}${Math.abs(n).toLocaleString("en-US", {
-    minimumFractionDigits: dp,
-    maximumFractionDigits: dp,
-  })}`;
-
-/** Strip under the hero. Illustrative, same caveat as everything above. */
-export const TICKER = [
-  { symbol: "BTC-PERP", price: 64_182.5, change: 2.41 },
-  { symbol: "ETH-PERP", price: 3_284.18, change: 1.87 },
-  { symbol: "SOL-PERP", price: 214.06, change: -0.94 },
-  { symbol: "HYPE-PERP", price: 41.23, change: 5.12 },
-  { symbol: "XRP-PERP", price: 2.418, change: -1.36 },
-  { symbol: "DOGE-PERP", price: 0.3914, change: 3.08 },
-] as const;
-
-/**
- * A short price trace per market, for the sparkline on each tile. Seeded from
- * the symbol so every render agrees, and shaped to end in the direction the
- * 24h change implies, a tile whose line disagrees with its number is worse
- * than no line at all.
- */
-export function sparkline(symbol: string, change: number, points = 24): number[] {
-  let seed = 0;
-  for (const ch of symbol) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
-  const rand = mulberry32(Math.abs(seed) + 7);
-  const out: number[] = [];
-  let v = 0;
-  for (let i = 0; i < points; i++) {
-    const drift = (change / points) * 0.9;
-    v += drift + (rand() - 0.5) * Math.abs(change || 1) * 0.55;
-    out.push(v);
-  }
-  // Land the trace on the real 24h move so the line and the label agree, but
-  // spread the correction across the whole series rather than pinning the last
-  // point, which leaves a spike on the final segment.
-  const delta = change - out[out.length - 1];
-  return out.map((v, i) => v + delta * (i / (points - 1)));
-}
 
 /**
  * Catmull-rom through a list of plotted points, emitted as one cubic path.
@@ -264,9 +204,9 @@ export const SCENARIOS: Scenario[] = [
     n: "01",
     title: "It runs",
     caption:
-      "Price does roughly what you drew. It takes its time about it and dips under your entry on the way, which is the part that makes people close early.",
+      "Price does roughly what you drew. It dips under you first, which is when most people bail.",
     exit: ORDER.target,
-    exitLabel: "Closed at target",
+    exitLabel: "Out at your number",
     bars: forecast(
       7301,
       shape([
@@ -282,9 +222,9 @@ export const SCENARIOS: Scenario[] = [
     n: "02",
     title: "It goes nowhere",
     caption:
-      "An hour of nothing. The reason you were long stops being true, so you take it off where you got in and leave with what you came with, minus the funding you paid to sit there.",
+      "An hour of nothing. You take it off where you got in, and leave with what you came with.",
     exit: ORDER.entry,
-    exitLabel: "Closed flat",
+    exitLabel: "Out flat",
     bars: forecast(
       4417,
       shape([
@@ -300,9 +240,9 @@ export const SCENARIOS: Scenario[] = [
     n: "03",
     title: "It breaks",
     caption:
-      "It goes the wrong way and keeps going. You are out at 62,900, which your line set the moment you drew the dip, and nobody had to ring you about it.",
+      "It goes the wrong way and keeps going. You're out at the line you drew, and nobody had to call you.",
     exit: ORDER.invalidation,
-    exitLabel: "Closed at invalidation",
+    exitLabel: "Out at your line",
     bars: forecast(
       9152,
       shape([
@@ -315,8 +255,19 @@ export const SCENARIOS: Scenario[] = [
   },
 ];
 
-/** Unrealised P&L at a price, for the readout that runs with the animation. */
-export const pnlAt = (price: number) => (price - ORDER.entry) * ORDER.size;
+/**
+ * What the trade is worth at a price, in the money this page quotes.
+ *
+ * The page sells to someone putting in a hundred dollars, not 2.5 BTC, so
+ * every figure on it is a $100 stake trading like $500 — the same arithmetic
+ * the drawable chart in the hero uses. Quoting +$8,050 beside a canvas quoting
+ * +$26 made the page read as though it were written for two different people.
+ */
+export const STAKE = 100;
+const TRADE_LIKE = 5;
+
+export const pnlAt = (price: number) =>
+  ((price - ORDER.entry) / ORDER.entry) * STAKE * TRADE_LIKE;
 
 // --- drawing over your own line --------------------------------------------
 
@@ -355,24 +306,41 @@ export function lineTo(end: number) {
 }
 
 /**
- * The prices a shape implies, by the rule in the FAQ: the end of the curve is
- * the target, and the furthest it strays the wrong way is the invalidation.
- * Which way is wrong depends on where the line finishes, so a line dragged
- * through the entry turns the position around with it.
+ * The prices a shape implies.
+ *
+ * The whole drawn path counts, not just where it stopped. Reading the target
+ * off the last point threw away everything in between: a line that dives five
+ * percent and climbs back to where it started came out as a flat trade with an
+ * enormous drawdown, which is the opposite of what was drawn. So the target is
+ * the furthest the line ever gets from the entry, whichever side that is on,
+ * and the floor is the furthest it goes the other way — the drawdown you drew
+ * yourself and therefore agreed to sit through.
+ *
+ * Which way the trade faces falls out of the same test rather than being read
+ * off the end, so a line dragged through the entry turns the position around
+ * with it.
  */
-export function levelsFor(prices: number[]) {
-  const target = prices[prices.length - 1];
-  const long = target >= ORDER.entry;
+export function levelsFor(prices: number[], entry: number = ORDER.entry) {
   const rest = prices.slice(1);
-  const invalidation = long
-    ? Math.min(ORDER.entry, ...rest)
-    : Math.max(ORDER.entry, ...rest);
+  let hi = entry;
+  let lo = entry;
+  for (const p of rest) {
+    if (p > hi) {
+      hi = p;
+    }
+    if (p < lo) {
+      lo = p;
+    }
+  }
+  const long = hi - entry >= entry - lo;
+  const target = long ? hi : lo;
+  const invalidation = long ? lo : hi;
   return {
     target,
     invalidation,
     long,
-    reward: Math.abs(target - ORDER.entry) * ORDER.size,
-    risk: Math.abs(invalidation - ORDER.entry) * ORDER.size,
+    reward: Math.abs(target - entry) * ORDER.size,
+    risk: Math.abs(invalidation - entry) * ORDER.size,
   };
 }
 

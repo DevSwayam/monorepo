@@ -1,5 +1,6 @@
 "use client";
 
+import { Candles, spacing } from "./chart";
 import {
   type Candle,
   CANDLES,
@@ -68,9 +69,9 @@ const ENTRY_STOP = stopAt(ORDER.entry);
 const INVAL_STOP = stopAt(ORDER.invalidation);
 
 const LEVELS = [
-  { price: ORDER.target, label: "Target", accent: true },
-  { price: ORDER.entry, label: "Entry", accent: false },
-  { price: ORDER.invalidation, label: "Invalidation", accent: false },
+  { price: ORDER.target, label: "Aiming for", accent: true },
+  { price: ORDER.entry, label: "You're in at", accent: false },
+  { price: ORDER.invalidation, label: "You're out at", accent: false },
 ];
 
 /** Percentages, because the labels are HTML sitting on top of the viewBox. */
@@ -235,28 +236,13 @@ export function ScenarioChart({
         ))}
 
         {/* what already happened */}
-        {HISTORY.map((c, i) => {
-          const cx = PLOT_L + i * hstep + hstep / 2;
-          const rising = c.c >= c.o;
-          const top = y(Math.max(c.o, c.c));
-          const bottom = y(Math.min(c.o, c.c));
-          return (
-            <g
-              fill={rising ? "var(--up)" : "var(--down)"}
-              key={i}
-              opacity="0.55"
-              stroke={rising ? "var(--up)" : "var(--down)"}
-            >
-              <line strokeWidth="0.9" x1={cx} x2={cx} y1={y(c.h)} y2={y(c.l)} />
-              <rect
-                height={Math.max(1, bottom - top)}
-                width={hbody}
-                x={cx - hbody / 2}
-                y={top}
-              />
-            </g>
-          );
-        })}
+        <Candles
+          bars={HISTORY}
+          body={hbody}
+          opacity="0.55"
+          x={spacing(PLOT_L, hstep)}
+          y={y}
+        />
 
         {/* the line you drew */}
         <path
@@ -269,27 +255,14 @@ export function ScenarioChart({
         />
 
         {/* what is happening, one candle at a time */}
-        {bars.map((c, i) => {
-          const cx = SPLIT + i * fstep + fstep / 2;
-          const rising = c.c >= c.o;
-          const top = y(Math.max(c.o, c.c));
-          const bottom = y(Math.min(c.o, c.c));
-          return (
-            <g
-              fill={rising ? "var(--up)" : "var(--down)"}
-              key={i}
-              stroke={rising ? "var(--up)" : "var(--down)"}
-            >
-              <line strokeWidth="1" x1={cx} x2={cx} y1={y(c.h)} y2={y(c.l)} />
-              <rect
-                height={Math.max(1.2, bottom - top)}
-                width={fbody}
-                x={cx - fbody / 2}
-                y={top}
-              />
-            </g>
-          );
-        })}
+        <Candles
+          bars={bars}
+          body={fbody}
+          minBody={1.2}
+          wick={1}
+          x={spacing(SPLIT, fstep)}
+          y={y}
+        />
 
         {step > 0 ? (
           <>

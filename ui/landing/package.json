@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "next dev --port ${PORT:-0}",
     "build": "next build",
-    "start": "next start --port 3000",
+    "start": "next start --port ${PORT:-0}",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "assets": "bun scripts/prepare-assets.mjs",
@@ -16,10 +16,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
-    "@daypicker/react": "^10.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cn": "^0.2.6",
     "geist": "^1.7.2",
     "lucide-react": "^1.45.0",
     "next": "16.3.5",

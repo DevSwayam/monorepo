@@ -10,8 +10,8 @@ Bun-workspaces monorepo.
 ├── bunfig.toml           # hoisted install linker
 ├── tsconfig.base.json    # shared TS compiler options
 └── ui/
-    ├── landing/          # @skech/landing — marketing site  (port 3000)
-    └── app/              # @skech/app     — product app     (port 3001)
+    ├── landing/          # @skech/landing — marketing site
+    └── app/              # @skech/app     — product app
 ```
 
 Both apps are Next.js 16 (App Router, TypeScript, Tailwind v4, ESLint, Turbopack)
@@ -22,8 +22,21 @@ with the `@/*` import alias pointing at each app's `src/`.
 ```bash
 bun install          # install every workspace from the root
 bun run dev          # run landing + app together
-bun run dev:landing  # http://localhost:3000
-bun run dev:app      # http://localhost:3001
+bun run dev:landing  # landing on its own
+bun run dev:app      # app on its own
+```
+
+## Ports
+
+Both apps run with `--port ${PORT:-0}`. Port 0 tells Next to take a random free
+one, so a second worktree, a second checkout, or a server you forgot to stop
+can never collide.
+
+The URL changes each run, so read it off the terminal rather than bookmarking
+it. When you need a fixed port — a webhook, an OAuth callback — set `PORT`:
+
+```bash
+PORT=3000 bun run dev:landing
 ```
 
 ## Scripts

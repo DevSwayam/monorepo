@@ -1,287 +1,262 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
-import { GlowDot } from "./glow-dot";
-import { CANDLES, DERIVED, fmtUsd, ORDER } from "./market-data";
-import { Band, Kicker, SectionHead } from "./ui";
+import { smoothPath } from "./market-data";
+import { Reveal, Spotlight } from "./motion";
+import { Section, SectionHead } from "./ui";
 
 /**
- * §5, four steps as a bento with an actual hierarchy.
+ * §5, what you actually do. Four equal cards, in the order you do them.
  *
- * The earlier version was four cells of near-equal weight in a 2+1 / 1+2 grid,
- * which is a row of panels wearing a bento's clothes. This one has a dominant
- * cell: Draw takes two columns and both rows, because drawing is the product
- * and the other three are what the exchange does afterwards.
+ * This was a four-cell bento headed "Four steps, and you only do the first
+ * one" — a mechanism brag that told a newcomer there were four steps and then
+ * left them wondering what the hidden three were. Its cells were dashboards:
+ * a leverage meter with a liquidation price, a receipt proving no slippage, a
+ * risk-reward scale in R multiples over 2.5 BTC. Every one answered a question
+ * a trader asks and a normal person has never heard.
  *
- * Shape is matched to content rather than assigned: the big square holds a
- * canvas, the small square holds a control, the tall-ish square holds a short
- * stack of figures, the wide one holds a scale that needs horizontal room.
+ * Equal cards rather than a bento, because no step here outranks the others
+ * and a bento with inert readouts in it is a bento pretending to be rich. Each
+ * caption is a benefit rather than a mechanism, and no dollar figure competes
+ * with the canvas above, which owns the numbers.
+ *
+ * Order is the real product flow — size, leverage, line — not the order that
+ * makes the best headline. Drawing is the identity of the product, so putting
+ * it first was tempting; it is third because that is when you do it.
+ *
+ * Two traps already fallen into here, both worth not repeating. The size card
+ * once claimed its number was "the only number you type", which is false while
+ * leverage is also yours to set: a simplification that is a lie is not worth
+ * having. And the last card was once titled "Close the app", which reads as
+ * walk away and watch it earn. Its caption still names both endings, whatever
+ * the title says.
  */
-function Cell({
-  n,
-  title,
-  caption,
-  note,
-  children,
-  className,
-  ruled = false,
-}: {
+const STEPS: {
   n: string;
   title: string;
   caption: string;
-  note: string;
-  children: ReactNode;
-  className?: string;
-  /** Lay chart ruling behind the cell. Only the canvas cell wants it. */
-  ruled?: boolean;
-}) {
+  visual: ReactNode;
+}[] = [
+  {
+    n: "01",
+    title: "Pick your size",
+    caption: "How much you put in. Twenty dollars or two thousand.",
+    visual: <Amount />,
+  },
+  {
+    n: "02",
+    title: "Set leverage",
+    caption: "Put in $100, trade like $500. You choose how far it goes.",
+    visual: <Leverage />,
+  },
+  {
+    n: "03",
+    title: "Draw it",
+    caption: "One line, roughly where you think it goes. No order types to learn.",
+    visual: <DrawnLine />,
+  },
+  {
+    n: "04",
+    title: "Watch it make money",
+    caption: "The closer the chart follows your line, the better you do.",
+    visual: <Tracking />,
+  },
+];
+
+/** The gesture, at a glance. A still is fine here; the live one is the hero. */
+const LINE_PTS = [
+  { x: 6, y: 62 },
+  { x: 34, y: 50 },
+  { x: 62, y: 68 },
+  { x: 92, y: 78 },
+  { x: 122, y: 58 },
+  { x: 152, y: 40 },
+  { x: 182, y: 46 },
+  { x: 214, y: 18 },
+];
+
+function DrawnLine() {
+  const pts = LINE_PTS;
+  const head = pts[pts.length - 1];
   return (
-    <div
-      className={cn(
-        "group relative flex flex-col border-border px-5 py-8 transition-colors duration-500 ease-out hover:bg-surface md:px-8",
-        className,
-      )}
+    <svg
+      aria-hidden="true"
+      className="h-full w-full"
+      fill="none"
+      viewBox="0 0 220 96"
     >
-      {ruled ? (
-        // Square ruling, matching the grid inside the hero's chart, masked so
-        // it dissolves rather than ending on a hard line at the cell edges.
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-grid"
-          style={{
-            maskImage:
-              "radial-gradient(ellipse 78% 72% at 50% 58%, #000 35%, transparent 100%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 78% 72% at 50% 58%, #000 35%, transparent 100%)",
-          }}
-        />
-      ) : null}
-      <div className="relative flex items-baseline gap-3">
-        <span className="font-mono text-fg-subtle text-xs tabular-nums">
-          {n}
+      <line
+        stroke="var(--fg-subtle)"
+        strokeDasharray="3 4"
+        strokeOpacity="0.35"
+        x1="0"
+        x2="220"
+        y1="62"
+        y2="62"
+      />
+      <path
+        d={smoothPath(pts)}
+        stroke="var(--brand)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.4"
+      />
+      <circle cx={head.x} cy={head.y} fill="var(--brand)" r="3.6" />
+    </svg>
+  );
+}
+
+/** What you put in. The same three chips the canvas offers, so the two agree. */
+function Amount() {
+  return (
+    <div className="flex h-full items-center gap-2">
+      {[20, 100, 500].map((s) => (
+        <span
+          className={
+            s === 100
+              ? "rounded-full bg-brand/15 px-3 py-1 font-mono text-brand text-sm tabular-nums"
+              : "rounded-full bg-surface-2 px-3 py-1 font-mono text-fg-muted text-sm tabular-nums"
+          }
+          key={s}
+        >
+          ${s}
         </span>
-        <h3 className="text-foreground text-title">{title}</h3>
-      </div>
-      <p className="relative mt-3 max-w-[46ch] text-fg-muted text-sm leading-[1.7]">
-        {caption}
-      </p>
-
-      <div className="relative mt-8 flex min-h-0 flex-1 flex-col justify-center">
-        {children}
-      </div>
-
-      <p className="relative mt-7 font-mono text-fg-subtle text-xs transition-colors duration-500 ease-out group-hover:text-brand">
-        {note}
-      </p>
+      ))}
     </div>
   );
 }
 
-const SPAN = ORDER.target - ORDER.invalidation;
-const ENTRY_PCT = ((ORDER.entry - ORDER.invalidation) / SPAN) * 100;
+/**
+ * How big you trade with it.
+ *
+ * The meter carries the idea and the caption carries the number, so the card
+ * reads as something you set rather than something done to you. The multiple
+ * itself stays out of the visual — "$500" is the fact a person can act on,
+ * "5×" is the fact they have to convert first.
+ */
+function Leverage() {
+  return (
+    <div className="flex h-full flex-col justify-center gap-3">
+      <div className="grid h-2 auto-cols-fr grid-flow-col gap-1">
+        {Array.from({ length: 10 }, (_, i) => (
+          <span
+            className={
+              i < 5
+                ? "rounded-full bg-brand"
+                : "rounded-full bg-surface-3 transition-colors duration-slow ease-smooth-out group-hover:bg-brand/25"
+            }
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length meter
+            key={i}
+          />
+        ))}
+      </div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-fg-subtle text-xs">trading with</span>
+        <span className="font-mono text-brand text-sm tabular-nums">$500</span>
+      </div>
+    </div>
+  );
+}
 
-// The canvas in the hero cell, in its own coordinate space.
-const CW = 720;
-const CH = 360;
-const HISTORY = CANDLES.slice(-34);
-const lo = Math.min(...HISTORY.map((c) => c.l)) - 400;
-const hi = ORDER.target + 600;
-const cy = (p: number) => ((hi - p) / (hi - lo)) * (CH - 40) + 20;
-const cstep = (CW * 0.44) / HISTORY.length;
+/**
+ * Price walking along the line you drew.
+ *
+ * Card 03 is the bare line; this is the same shape with the market moving over
+ * it, which is the progression the section is claiming: you draw it, then the
+ * chart either backs you up or it doesn't. The bars hug the path and drift off
+ * it slightly, because a chart that traced the drawing exactly would promise
+ * something the product cannot.
+ *
+ * The drift figures are a fixed list rather than random so the server and the
+ * client render the same picture.
+ */
+const DRIFT = [3, -4, 2, 6, -3, 4, -2, 5, -5, 3, 7, -2];
+
+function Tracking() {
+  const pts = LINE_PTS;
+  const at = (x: number) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      if (x <= b.x) {
+        return a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x || 1);
+      }
+    }
+    return pts[pts.length - 1].y;
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-full w-full"
+      fill="none"
+      viewBox="0 0 220 96"
+    >
+      <path
+        d={smoothPath(pts)}
+        stroke="var(--brand)"
+        strokeDasharray="3 5"
+        strokeLinecap="round"
+        strokeOpacity="0.45"
+        strokeWidth="2"
+      />
+      {DRIFT.map((d, i) => {
+        const x = 12 + i * 17;
+        const mid = at(x) + d;
+        const up = d <= 0;
+        const colour = up ? "var(--up)" : "var(--down)";
+        return (
+          <g
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length series
+            key={i}
+            opacity="0.85"
+          >
+            <line
+              stroke={colour}
+              strokeWidth="1"
+              x1={x}
+              x2={x}
+              y1={mid - 5}
+              y2={mid + 5}
+            />
+            <rect
+              fill={colour}
+              height="6"
+              rx="1"
+              width="3.4"
+              x={x - 1.7}
+              y={mid - 3}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 export function HowItWorks() {
   return (
-    <Band id="how-it-works">
-      <SectionHead id="how-title" kicker="How it works">
-        Four steps, and you only do the first one.
+    <Section id="how-it-works">
+      <SectionHead id="how-title" lead="Size, leverage, one line. That's it.">
+        Nothing to learn.
       </SectionHead>
 
-      <div className="grid lg:grid-cols-4">
-        {/* 01, the hero cell: two columns, both rows */}
-        <Cell
-          caption="Drag a line across the chart, roughly where you think price is going. That is the whole interaction."
-          className="border-b md:col-span-2 lg:row-span-2 lg:border-r lg:border-b-0"
-          n="01"
-          note="one gesture, no ticket"
-          ruled
-          title="Draw"
-        >
-          <div className="relative">
-            <svg
-              aria-hidden="true"
-              className="h-full w-full"
-              fill="none"
-              preserveAspectRatio="none"
-              viewBox={`0 0 ${CW} ${CH}`}
-            >
-              <title>A line drawn forward from the last candle</title>
-              {[ORDER.target, ORDER.entry, ORDER.invalidation].map((p, i) => (
-                <line
-                  key={p}
-                  stroke={i === 0 ? "var(--brand)" : "var(--border)"}
-                  strokeDasharray={i === 1 ? undefined : "4 6"}
-                  strokeOpacity={i === 0 ? 0.4 : 1}
-                  x1="0"
-                  x2={CW}
-                  y1={cy(p)}
-                  y2={cy(p)}
-                />
-              ))}
-              {HISTORY.map((c, i) => {
-                const x = 16 + i * cstep;
-                const top = cy(Math.max(c.o, c.c));
-                const bottom = cy(Math.min(c.o, c.c));
-                const colour = c.c >= c.o ? "var(--up)" : "var(--down)";
-                return (
-                  <g key={i} opacity="0.7">
-                    <line
-                      stroke={colour}
-                      strokeWidth="1"
-                      x1={x + cstep / 2}
-                      x2={x + cstep / 2}
-                      y1={cy(c.h)}
-                      y2={cy(c.l)}
-                    />
-                    <rect
-                      fill={colour}
-                      height={Math.max(1.5, bottom - top)}
-                      width={cstep * 0.58}
-                      x={x + cstep * 0.21}
-                      y={top}
-                    />
-                  </g>
-                );
-              })}
-              <path
-                className="hero-stroke"
-                d={`M ${16 + HISTORY.length * cstep} ${cy(ORDER.entry)}
-                    C ${CW * 0.56} ${cy(64_900)}, ${CW * 0.6} ${cy(63_400)}, ${CW * 0.68} ${cy(63_900)}
-                    S ${CW * 0.82} ${cy(66_100)}, ${CW * 0.88} ${cy(65_700)}
-                    S ${CW - 30} ${cy(67_100)}, ${CW - 14} ${cy(ORDER.target)}`}
-                pathLength={1}
-                stroke="var(--brand)"
-                strokeLinecap="round"
-                strokeWidth="3"
-              />
-            </svg>
-            <GlowDot
-              left={((CW - 14) / CW) * 100}
-              top={(cy(ORDER.target) / CH) * 100}
-            />
-            {/* Labels the target level from the left. On the right it sat on
-                top of the lit head, which is the one thing in the cell that
-                should not be covered. */}
-            <span
-              className="-translate-y-1/2 absolute left-0 bg-brand px-1.5 py-0.5 font-mono text-[0.6875rem] text-[color:var(--brand-foreground)] tabular-nums"
-              style={{ top: `${(cy(ORDER.target) / CH) * 100}%` }}
-            >
-              {fmtUsd(ORDER.target)}
-            </span>
-          </div>
-        </Cell>
-
-        {/* 02, a control */}
-        <Cell
-          caption="Say how much you want on."
-          className="border-b md:border-r lg:col-start-3 lg:row-start-1"
-          n="02"
-          note="leverage 5×"
-          title="Size"
-        >
-          <div className="space-y-5">
-            <div className="flex items-baseline justify-between gap-4">
-              <span className="text-fg-subtle text-sm">Size</span>
-              <span className="font-mono text-foreground text-sm tabular-nums">
-                {ORDER.size} BTC
-              </span>
-            </div>
-            <div className="flex h-2 gap-px">
-              {Array.from({ length: 20 }, (_, i) => (
-                <span
-                  className={cn(
-                    "flex-1 transition-colors duration-500 ease-out",
-                    i < 9 ? "bg-brand" : "bg-surface-2 group-hover:bg-brand/25",
-                  )}
-                  key={i}
-                />
-              ))}
-            </div>
-            <div className="flex items-baseline justify-between gap-4">
-              <span className="text-fg-subtle text-sm">Liquidation</span>
-              <span className="font-mono text-foreground text-sm tabular-nums">
-                {fmtUsd(ORDER.liquidation, 2)}
-              </span>
-            </div>
-          </div>
-        </Cell>
-
-        {/* 03, a receipt */}
-        <Cell
-          caption="Filled against your line inside one block."
-          className="border-b lg:col-start-4 lg:row-start-1"
-          n="03"
-          note="the price you drew"
-          title="Open"
-        >
-          <div>
-            <Kicker>You drew</Kicker>
-            <p className="mt-2 font-mono text-foreground text-xl tabular-nums">
-              {fmtUsd(ORDER.entry, 2)}
-            </p>
-            <div className="mt-5">
-              <Kicker>You got</Kicker>
-              <p className="mt-2 font-mono text-brand text-xl tabular-nums">
-                {fmtUsd(ORDER.entry, 2)}
-              </p>
-            </div>
-          </div>
-        </Cell>
-
-        {/* 04, a scale that wants width */}
-        <Cell
-          caption="Out at your target, or your invalidation. Changed your mind halfway? Draw over it."
-          className="md:col-span-2 lg:col-start-3 lg:row-start-2"
-          n="04"
-          note="risk 1, reward 2.5"
-          title="Close"
-        >
-          <div>
-            <div className="relative h-2">
-              <div
-                className="absolute inset-y-0 left-0 bg-fg-subtle/60"
-                style={{ width: `${ENTRY_PCT}%` }}
-              />
-              <div
-                className="absolute inset-y-0 right-0 bg-brand"
-                style={{ width: `${100 - ENTRY_PCT}%` }}
-              />
-              <span
-                className="-translate-x-1/2 -top-1.5 absolute h-5 w-0.5 bg-foreground"
-                style={{ left: `${ENTRY_PCT}%` }}
-              />
-            </div>
-            <div className="mt-4 grid grid-cols-3 font-mono text-xs tabular-nums">
-              <span className="text-fg-subtle">
-                {fmtUsd(ORDER.invalidation)}
-              </span>
-              <span className="text-center text-foreground">
-                {fmtUsd(ORDER.entry)}
-              </span>
-              <span className="text-right text-brand">
-                {fmtUsd(ORDER.target)}
-              </span>
-              <span className="mt-2 text-fg-subtle">
-                −${fmtUsd(DERIVED.risk)}
-              </span>
-              <span className="mt-2 text-center text-fg-subtle">
-                {DERIVED.rr.toFixed(1)}R
-              </span>
-              <span className="mt-2 text-right text-brand">
-                +${fmtUsd(DERIVED.reward)}
-              </span>
-            </div>
-          </div>
-        </Cell>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {STEPS.map((step, i) => (
+          <Reveal className="group" index={i} key={step.n}>
+            <Spotlight className="surface sheen-top liftable h-full overflow-hidden rounded-2xl">
+              <div className="flex h-full flex-col p-6 md:p-7">
+                <div className="h-24">{step.visual}</div>
+                <div className="mt-7 flex items-center gap-2.5">
+                  <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[0.6875rem] text-fg-subtle tabular-nums">
+                    {step.n}
+                  </span>
+                  <h3 className="text-foreground text-title">{step.title}</h3>
+                </div>
+                <p className="mt-2.5 text-body text-fg-muted">{step.caption}</p>
+              </div>
+            </Spotlight>
+          </Reveal>
+        ))}
       </div>
-    </Band>
+    </Section>
   );
 }

@@ -1,6 +1,6 @@
-import { fmtUsd, ORDER } from "./market-data";
 import { ScenarioPanel } from "./scenario-panel";
-import { Band, SectionHead } from "./ui";
+import { Reveal } from "./motion";
+import { Panel, Section, SectionHead } from "./ui";
 
 /**
  * §6, one line, three endings, played rather than described.
@@ -12,16 +12,19 @@ import { Band, SectionHead } from "./ui";
  */
 export function WorkedExample() {
   return (
-    <Band id="worked-example">
+    <Section id="worked-example">
       <SectionHead
         id="worked-example-title"
-        kicker="A worked example"
-        lead={`${ORDER.size} BTC at ${ORDER.leverage}×, in at ${fmtUsd(ORDER.entry)}. The blue line is what you drew, and it does not change here. Price is the only thing that does, three different ways, and the figure in the rail is what you are up or down while it happens.`}
+        lead="The line stays put. Only the price moves — here are three ways it can go."
       >
         Say you draw this one on BTC.
       </SectionHead>
 
-      <ScenarioPanel />
-    </Band>
+      <Reveal>
+        <Panel raised>
+          <ScenarioPanel />
+        </Panel>
+      </Reveal>
+    </Section>
   );
 }
