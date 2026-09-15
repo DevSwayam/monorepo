@@ -1,11 +1,12 @@
 "use client";
 
+import { RailRow, signed } from "./chart";
+import { useInView, useReducedMotion } from "./motion";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   FORECAST_BARS,
   fmtUsd,
-  MARKET,
   ORDER,
   pnlAt,
   STAKE,
@@ -17,35 +18,6 @@ import { markAt, ScenarioChart } from "./scenario-chart";
 /** One scenario plays over this long, then holds so the ending can be read. */
 const RUN_MS = 4400;
 const HOLD_MS = 2400;
-
-function Row({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <span className="text-fg-subtle text-sm">{label}</span>
-      <span
-        className={cn(
-          "font-mono text-sm tabular-nums",
-          tone ?? "text-foreground",
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function signed(n: number) {
-  if (Math.round(n) === 0) return "$0";
-  return `${n > 0 ? "+" : "−"}$${fmtUsd(Math.abs(n))}`;
-}
 
 function Slide({ scenario, step }: { scenario: Scenario; step: number }) {
   const mark = markAt(scenario, step);
@@ -71,13 +43,13 @@ function Slide({ scenario, step }: { scenario: Scenario; step: number }) {
         </div>
 
         <div className="space-y-3.5">
-          <Row label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
-          <Row label="You put in" value={`$${STAKE}`} />
+          <RailRow label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
+          <RailRow label="You put in" value={`$${STAKE}`} />
         </div>
 
         <div className="space-y-3.5">
-          <Row label="Right now" value={fmtUsd(mark, 2)} />
-          <Row
+          <RailRow label="Right now" value={fmtUsd(mark, 2)} />
+          <RailRow
             label={done ? "Ended" : "So far"}
             tone={tone}
             value={signed(pnl)}
@@ -118,30 +90,10 @@ export function ScenarioPanel() {
   const [active, setActive] = useState(0);
   const [step, setStep] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [inView, setInView] = useState(false);
-  const [reduced, setReduced] = useState(false);
 
   const elapsed = useRef(0);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduced(mql.matches);
-    sync();
-    mql.addEventListener("change", sync);
-    return () => mql.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.2 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  const reduced = useReducedMotion();
+  const [ref, inView] = useInView<HTMLDivElement>(0.2);
 
   useEffect(() => {
     if (reduced || paused || !inView) return;

@@ -1,4 +1,3 @@
-import { fmtUsd, ORDER } from "./market-data";
 import { ScenarioPanel } from "./scenario-panel";
 import { Reveal } from "./motion";
 import { Panel, Section, SectionHead } from "./ui";

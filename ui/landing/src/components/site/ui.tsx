@@ -71,7 +71,7 @@ export function Panel({
   );
 }
 
-export function Headline({
+function Headline({
   children,
   as: Tag = "h2",
   className,
@@ -148,48 +148,5 @@ export function SectionHead({
         </p>
       ) : null}
     </Reveal>
-  );
-}
-
-/** A cell inside a panel's grid. Padding only; separation is the panel's job. */
-export function Cell({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("p-6 md:p-8", className)}>{children}</div>
-  );
-}
-
-/**
- * Honest hole where an asset will go. Shows the filename it is waiting for
- * rather than pretending with a stock render.
- */
-export function Placeholder({
-  file,
-  note,
-  className,
-}: {
-  file: string;
-  note: string;
-  className?: string;
-}) {
-  return (
-    <div
-      aria-label={`${note} placeholder`}
-      className={cn(
-        "relative flex items-center justify-center rounded-xl bg-surface-2 bg-grid",
-        className,
-      )}
-      role="img"
-    >
-      <div className="flex flex-col items-center gap-1.5 rounded-lg bg-background px-4 py-3 text-center shadow-card">
-        <span className="font-mono text-foreground text-xs">{file}</span>
-        <span className="text-fg-subtle text-xs">{note}</span>
-      </div>
-    </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Candles, spacing } from "./chart";
 import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -710,66 +711,21 @@ export function DrawCanvas({
           />
 
           {/* history */}
-          {feed.map((c, i) => {
-            const cx = PLOT_L + i * sc.step + sc.step / 2;
-            const up = c.c >= c.o;
-            const top = sc.y(Math.max(c.o, c.c));
-            const bottom = sc.y(Math.min(c.o, c.c));
-            return (
-              <g
-                fill={up ? "var(--up)" : "var(--down)"}
-                // biome-ignore lint/suspicious/noArrayIndexKey: rolling window
-                key={i}
-                opacity={hasLine ? "0.4" : "0.7"}
-                stroke={up ? "var(--up)" : "var(--down)"}
-              >
-                <line
-                  strokeWidth="0.9"
-                  x1={cx}
-                  x2={cx}
-                  y1={sc.y(c.h)}
-                  y2={sc.y(c.l)}
-                />
-                <rect
-                  height={Math.max(1, bottom - top)}
-                  width={sc.body}
-                  x={cx - sc.body / 2}
-                  y={top}
-                />
-              </g>
-            );
-          })}
+          <Candles
+            bars={feed}
+            body={sc.body}
+            opacity={hasLine ? "0.4" : "0.7"}
+            x={spacing(PLOT_L, sc.step)}
+            y={sc.y}
+          />
 
           {/* what the market is actually doing about it */}
-          {run.map((c, i) => {
-            const cx = SPLIT + i * runWidth + runWidth / 2;
-            const up = c.c >= c.o;
-            const top = sc.y(Math.max(c.o, c.c));
-            const bottom = sc.y(Math.min(c.o, c.c));
-            const bw = Math.max(2.4, runWidth * 0.58);
-            return (
-              <g
-                fill={up ? "var(--up)" : "var(--down)"}
-                // biome-ignore lint/suspicious/noArrayIndexKey: append-only
-                key={i}
-                stroke={up ? "var(--up)" : "var(--down)"}
-              >
-                <line
-                  strokeWidth="0.9"
-                  x1={cx}
-                  x2={cx}
-                  y1={sc.y(c.h)}
-                  y2={sc.y(c.l)}
-                />
-                <rect
-                  height={Math.max(1, bottom - top)}
-                  width={bw}
-                  x={cx - bw / 2}
-                  y={top}
-                />
-              </g>
-            );
-          })}
+          <Candles
+            bars={run}
+            body={Math.max(2.4, runWidth * 0.58)}
+            x={spacing(SPLIT, runWidth)}
+            y={sc.y}
+          />
 
           {/* the line */}
           {pts.length > 1 ? (

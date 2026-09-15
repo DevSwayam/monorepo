@@ -1,5 +1,7 @@
 "use client";
 
+import { useInView, useReducedMotion } from "./motion";
+import { Candles, RailRow, spacing } from "./chart";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -123,30 +125,6 @@ function chaseAt(p: number) {
 const TICK = 10;
 const snap = (v: number) => Math.round(v / TICK) * TICK;
 
-function Line({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: string;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <span className="text-fg-subtle text-sm">{label}</span>
-      <span
-        className={cn(
-          "font-mono text-sm tabular-nums",
-          tone ?? "text-foreground",
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
 /**
  * §7, the line is not a commitment, shown by moving it.
  *
@@ -164,31 +142,11 @@ export function RedrawPanel() {
   const [held, setHeld] = useState<number | null>(null);
   const [taken, setTaken] = useState(false);
   const [grabbing, setGrabbing] = useState(false);
-  const [inView, setInView] = useState(false);
-  const [reduced, setReduced] = useState(false);
   const [replay, setReplay] = useState(0);
 
-  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const [ref, inView] = useInView<HTMLDivElement>(0.3);
   const plot = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduced(mql.matches);
-    sync();
-    mql.addEventListener("change", sync);
-    return () => mql.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.3 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!inView || reduced || taken) return;
@@ -361,64 +319,24 @@ export function RedrawPanel() {
                 y2={y(level.invalidation)}
               />
 
-              {HISTORY.map((c, i) => {
-                const cx = PLOT_L + i * hstep + hstep / 2;
-                const rising = c.c >= c.o;
-                const top = y(Math.max(c.o, c.c));
-                const bottom = y(Math.min(c.o, c.c));
-                return (
-                  <g
-                    fill={rising ? "var(--up)" : "var(--down)"}
-                    key={i}
-                    opacity="0.5"
-                    stroke={rising ? "var(--up)" : "var(--down)"}
-                  >
-                    <line
-                      strokeWidth="0.9"
-                      x1={cx}
-                      x2={cx}
-                      y1={y(c.h)}
-                      y2={y(c.l)}
-                    />
-                    <rect
-                      height={Math.max(1, bottom - top)}
-                      width={hbody}
-                      x={cx - hbody / 2}
-                      y={top}
-                    />
-                  </g>
-                );
-              })}
+              <Candles
+                bars={HISTORY}
+                body={hbody}
+                opacity="0.5"
+                x={spacing(PLOT_L, hstep)}
+                y={y}
+              />
 
               {/* price, going the other way to the line */}
-              {bars.map((c, i) => {
-                const cx = SPLIT + i * fstep + fstep / 2;
-                const rising = c.c >= c.o;
-                const top = y(Math.max(c.o, c.c));
-                const bottom = y(Math.min(c.o, c.c));
-                return (
-                  <g
-                    fill={rising ? "var(--up)" : "var(--down)"}
-                    key={i}
-                    opacity="0.85"
-                    stroke={rising ? "var(--up)" : "var(--down)"}
-                  >
-                    <line
-                      strokeWidth="1"
-                      x1={cx}
-                      x2={cx}
-                      y1={y(c.h)}
-                      y2={y(c.l)}
-                    />
-                    <rect
-                      height={Math.max(1.2, bottom - top)}
-                      width={fbody}
-                      x={cx - fbody / 2}
-                      y={top}
-                    />
-                  </g>
-                );
-              })}
+              <Candles
+                bars={bars}
+                body={fbody}
+                minBody={1.2}
+                opacity="0.85"
+                wick={1}
+                x={spacing(SPLIT, fstep)}
+                y={y}
+              />
 
               {/* where the line started, so you can see what you changed */}
               <path
@@ -568,26 +486,26 @@ export function RedrawPanel() {
           </div>
 
           <div className="space-y-3.5">
-            <Line label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
-            <Line label="You put in" value={`$${STAKE}`} />
+            <RailRow label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
+            <RailRow label="You put in" value={`$${STAKE}`} />
           </div>
 
           <div className="space-y-3.5">
-            <Line
+            <RailRow
               label="Aiming for"
               tone="text-brand"
               value={fmtUsd(snap(level.target))}
             />
-            <Line label="You're out at" value={fmtUsd(snap(level.invalidation))} />
+            <RailRow label="You're out at" value={fmtUsd(snap(level.invalidation))} />
           </div>
 
           <div className="space-y-3.5">
-            <Line
+            <RailRow
               label="If it works"
               tone="text-up"
               value={`+$${fmtUsd(win)}`}
             />
-            <Line
+            <RailRow
               label="Most you lose"
               tone="text-down"
               value={`−$${fmtUsd(lose)}`}

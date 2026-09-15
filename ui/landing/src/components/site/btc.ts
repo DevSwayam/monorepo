@@ -22,7 +22,7 @@ import { type Candle, CANDLES, ORDER } from "./market-data";
 const ENDPOINT =
   "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=3600";
 
-export type Market = {
+type Market = {
   candles: Candle[];
   /** Last close, which is where a trade drawn right now would start. */
   price: number;

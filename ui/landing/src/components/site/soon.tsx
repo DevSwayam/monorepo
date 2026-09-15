@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
  * toast carries a stable id so mashing several of them updates one notice
  * instead of stacking a pile.
  */
-export function announceSoon(detail: string) {
+function announceSoon(detail: string) {
   toastManager.add({
     id: "coming-soon",
     title: "Coming soon",

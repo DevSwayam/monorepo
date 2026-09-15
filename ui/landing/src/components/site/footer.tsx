@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { LogoMark } from "./logo";
+import { LogoLink } from "./logo";
 import { SoonLink } from "./soon";
 
 const LINKS = [
@@ -20,16 +19,7 @@ export function SiteFooter() {
   return (
     <footer className="container-x px-4 pt-6 pb-10 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-6 px-2 md:flex-row md:items-center md:justify-between">
-        <Link
-          aria-label="skech home"
-          className="pressable flex items-center gap-2.5 text-foreground"
-          href="/"
-        >
-          <LogoMark className="h-5 w-6" />
-          <span className="font-semibold text-[0.9375rem] tracking-[-0.025em]">
-            skech
-          </span>
-        </Link>
+        <LogoLink />
 
         <nav aria-label="Footer">
           <ul className="flex items-center gap-2">

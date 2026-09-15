@@ -11,15 +11,6 @@
  * identical geometry, a random walk evaluated twice would hydrate mismatched.
  */
 
-export const MARKET = {
-  symbol: "BTC-PERP",
-  last: 64_182.5,
-  change24h: 2.41,
-  funding: 0.0041,
-  markPrice: 64_180.0,
-} as const;
-
-/** The order the drawn path produces. 5× long, entered at the last price. */
 export const ORDER = {
   side: "long",
   entry: 64_180,
@@ -31,20 +22,9 @@ export const ORDER = {
   liquidation: 51_665,
 } as const;
 
-const notional = ORDER.entry * ORDER.size;
-export const DERIVED = {
-  notional,
-  margin: notional / ORDER.leverage,
-  reward: (ORDER.target - ORDER.entry) * ORDER.size,
-  risk: (ORDER.entry - ORDER.invalidation) * ORDER.size,
-  get rr() {
-    return this.reward / this.risk;
-  },
-};
-
 // --- series ----------------------------------------------------------------
 
-export function mulberry32(seed: number) {
+function mulberry32(seed: number) {
   let a = seed;
   return () => {
     a |= 0;
@@ -113,46 +93,6 @@ export const DRAWN_PATH: { t: number; price: number }[] = [
 
 export const fmtUsd = (n: number, dp = 0) =>
   n.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
-
-export const fmtSigned = (n: number, dp = 2) =>
-  `${n >= 0 ? "+" : "−"}${Math.abs(n).toLocaleString("en-US", {
-    minimumFractionDigits: dp,
-    maximumFractionDigits: dp,
-  })}`;
-
-/** Strip under the hero. Illustrative, same caveat as everything above. */
-export const TICKER = [
-  { symbol: "BTC-PERP", price: 64_182.5, change: 2.41 },
-  { symbol: "ETH-PERP", price: 3_284.18, change: 1.87 },
-  { symbol: "SOL-PERP", price: 214.06, change: -0.94 },
-  { symbol: "HYPE-PERP", price: 41.23, change: 5.12 },
-  { symbol: "XRP-PERP", price: 2.418, change: -1.36 },
-  { symbol: "DOGE-PERP", price: 0.3914, change: 3.08 },
-] as const;
-
-/**
- * A short price trace per market, for the sparkline on each tile. Seeded from
- * the symbol so every render agrees, and shaped to end in the direction the
- * 24h change implies, a tile whose line disagrees with its number is worse
- * than no line at all.
- */
-export function sparkline(symbol: string, change: number, points = 24): number[] {
-  let seed = 0;
-  for (const ch of symbol) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
-  const rand = mulberry32(Math.abs(seed) + 7);
-  const out: number[] = [];
-  let v = 0;
-  for (let i = 0; i < points; i++) {
-    const drift = (change / points) * 0.9;
-    v += drift + (rand() - 0.5) * Math.abs(change || 1) * 0.55;
-    out.push(v);
-  }
-  // Land the trace on the real 24h move so the line and the label agree, but
-  // spread the correction across the whole series rather than pinning the last
-  // point, which leaves a spike on the final segment.
-  const delta = change - out[out.length - 1];
-  return out.map((v, i) => v + delta * (i / (points - 1)));
-}
 
 /**
  * Catmull-rom through a list of plotted points, emitted as one cubic path.
@@ -324,7 +264,7 @@ export const SCENARIOS: Scenario[] = [
  * +$26 made the page read as though it were written for two different people.
  */
 export const STAKE = 100;
-export const TRADE_LIKE = 5;
+const TRADE_LIKE = 5;
 
 export const pnlAt = (price: number) =>
   ((price - ORDER.entry) / ORDER.entry) * STAKE * TRADE_LIKE;

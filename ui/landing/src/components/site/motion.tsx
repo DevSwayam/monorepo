@@ -117,3 +117,47 @@ export function Spotlight({
     </div>
   );
 }
+
+/**
+ * Whether the reader has asked for less movement.
+ *
+ * Live, not read once: someone who turns the system setting on mid-visit gets
+ * a still page without reloading, which is the point of the setting.
+ */
+export function useReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
+  return reduced;
+}
+
+/**
+ * Whether the returned ref is on screen.
+ *
+ * The walkthroughs use this to hold their clock while they are scrolled away:
+ * a chart that plays to nobody has usually finished by the time it is read.
+ * Unlike `Reveal`, this keeps watching — it reports leaving as well as
+ * arriving.
+ */
+export function useInView<T extends HTMLElement>(threshold: number) {
+  const ref = useRef<T>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [threshold]);
+  return [ref, inView] as const;
+}
