@@ -628,6 +628,44 @@
   animation: dc-call 2.6s var(--ease-in-out) infinite;
 }
 
+/*
+ * The result arriving.
+ *
+ * Scale and blur together, not a plain fade: the card is a surface turning up,
+ * and a surface that only changes opacity reads as a decal. The scrim comes in
+ * on its own, slightly ahead, so the market is already going quiet by the time
+ * the figure lands.
+ */
+@keyframes dc-summary {
+  from {
+    opacity: 0;
+    transform: scale(var(--scale-large, 0.96));
+    filter: blur(var(--blur-large, 8px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes dc-scrim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dc-summary {
+  animation: dc-summary var(--duration-fast) var(--ease-smooth-out) both;
+}
+
+.dc-scrim {
+  animation: dc-scrim var(--duration-medium) var(--ease-smooth-out) both;
+}
+
 @keyframes dc-live {
   0%,
   100% {
@@ -653,6 +691,10 @@
   .dc-zone,
   .dc-call {
     animation: none;
+  }
+  /* Reduced motion keeps the arrival, without the movement. */
+  .dc-summary {
+    animation: dc-scrim var(--duration-quick) both;
   }
   .dc-live {
     animation: none;
