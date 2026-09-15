@@ -389,9 +389,17 @@ export function DrawCanvas({
   const [feed, setFeed] = useState<Candle[]>(() => seed.slice(-HISTORY));
   const [run, setRun] = useState<Candle[]>([]);
   const [entry, setEntry] = useState(seedPrice);
-  const [result, setResult] = useState<{ won: boolean; pnl: number } | null>(
-    null,
-  );
+  type Result = {
+    won: boolean;
+    pnl: number;
+    /** "long", "short", or how many legs the drawing turned into. */
+    side: string;
+    entry: number;
+    exit: number;
+    fees: number;
+    liquidated: boolean;
+  };
+  const [result, setResult] = useState<Result | null>(null);
   const [note, setNote] = useState<string | null>(null);
   /**
    * How closely this market respects the line, fixed for the whole trade.
@@ -519,8 +527,21 @@ export function DrawCanvas({
       // The run folds into history so the chart carries straight on, but the
       // canvas does not clear itself: a trade that wiped the board the instant
       // it ended was a trade nobody got to read the end of.
-      const finish = (net: number) => {
-        setResult({ won: net >= 0, pnl: net });
+      const finish = (net: number, bk: ReturnType<typeof settle>) => {
+        setResult({
+          won: net >= 0,
+          pnl: net,
+          side:
+            sh.legs.length === 1
+              ? sh.legs[0].dir > 0
+                ? "long"
+                : "short"
+              : `${sh.legs.length} legs`,
+          entry,
+          exit: bar.c,
+          fees: bk.fees,
+          liquidated: bk.liquidated,
+        });
         setFeed((f) => [...f, ...next].slice(-HISTORY));
         setRun([]);
         setPts([]);
@@ -529,9 +550,9 @@ export function DrawCanvas({
 
       const bk = settle(next, sh.legs, sh.span);
       if (bk.liquidated) {
-        finish(-MARGIN);
+        finish(-MARGIN, bk);
       } else if (next.length >= RUN_BARS) {
-        finish(bk.net);
+        finish(bk.net, bk);
       }
 
     }, TICK_MS);
@@ -924,43 +945,90 @@ export function DrawCanvas({
         */}
         {phase === "settled" && result ? (
           <div className="absolute inset-0 grid place-items-center p-4">
-            {/* The scrim. A card this size over a running chart is unreadable
+            {/* The scrim. A card this size over moving candles is unreadable
                 without one, and pushing the market back is also what says the
                 trade is over. */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-background/70 backdrop-blur-[2px]"
+              className="dc-scrim absolute inset-0 bg-background/72 backdrop-blur-[3px]"
             />
             <div
               aria-live="polite"
-              className="surface-raised sheen-top relative w-full max-w-sm rounded-2xl px-6 py-6 text-center"
+              className="dc-summary surface-raised sheen-top relative w-full max-w-[21rem] rounded-2xl p-6"
             >
-              <p className="text-fg-subtle text-sm">
-                {result.won ? "Called it." : "Went the other way."}
+              {/* Outcome first, in three words, carrying the colour. */}
+              <p className="flex items-center justify-center gap-2 text-kicker">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    result.won ? "bg-[var(--up)]" : "bg-[var(--down)]",
+                  )}
+                />
+                <span
+                  className={
+                    result.won ? "text-[var(--up)]" : "text-[var(--down)]"
+                  }
+                >
+                  {result.liquidated
+                    ? "Liquidated"
+                    : result.won
+                      ? "Profit"
+                      : "Loss"}
+                </span>
               </p>
+
+              {/* The figure is the point, so nothing else on the card competes
+                  with it for size. */}
               <p
                 className={cn(
-                  "mt-1.5 font-mono text-[2rem] leading-none tabular-nums",
+                  "mt-2 text-center font-mono text-[2.75rem] leading-none tracking-[-0.03em] tabular-nums",
                   result.won ? "text-[var(--up)]" : "text-[var(--down)]",
                 )}
               >
                 {result.won ? "+" : "−"}${fmtUsd(Math.abs(result.pnl))}
               </p>
-              <p className="mx-auto mt-4 max-w-[30ch] text-balance text-fg-muted text-sm leading-relaxed">
-                {result.won
-                  ? `On $${MARGIN} at ${LEVERAGE}×. That was practice — the real one uses your own money, and the drawing works the same.`
-                  : `On $${MARGIN} at ${LEVERAGE}×. Nothing was at stake here. Worth knowing before it is.`}
-              </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+
+              {/* The receipt. Three lines of prose explaining the number is
+                  worse than the working that produced it, and the chart it
+                  came off is behind a scrim. */}
+              <dl className="mt-5 space-y-2 rounded-xl bg-background/60 px-4 py-3 shadow-[inset_0_0_0_1px_var(--edge)]">
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-fg-subtle text-xs">You drew</dt>
+                  <dd className="font-mono text-foreground text-xs">
+                    {result.side}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-fg-subtle text-xs">In, then out</dt>
+                  <dd className="font-mono text-foreground text-xs tabular-nums">
+                    {fmtUsd(result.entry)} → {fmtUsd(result.exit)}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-fg-subtle text-xs">Fees</dt>
+                  <dd className="font-mono text-fg-muted text-xs tabular-nums">
+                    −${fmtUsd(result.fees, 2)}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-4">
+                  <dt className="text-fg-subtle text-xs">Stake</dt>
+                  <dd className="font-mono text-fg-muted text-xs tabular-nums">
+                    ${MARGIN} at {LEVERAGE}×
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-5 flex flex-col gap-2">
                 <SoonButton
-                  className="pressable h-11 rounded-full bg-linear-to-b from-brand-soft to-brand px-5 shadow-brand sm:h-11"
+                  className="pressable h-11 w-full rounded-full bg-linear-to-b from-brand-soft to-brand text-base shadow-brand sm:h-11 sm:text-base"
                   detail="Drawing with real money opens with the public testnet."
                   size="sm"
                 >
                   Start drawing for real
                 </SoonButton>
                 <button
-                  className="pressable rounded-full px-4 py-2.5 text-fg-muted text-sm transition-colors duration-fast ease-smooth-out hover:text-foreground"
+                  className="pressable h-9 rounded-full text-fg-muted text-sm transition-colors duration-fast ease-smooth-out hover:text-foreground"
                   onClick={() => {
                     setResult(null);
                     setPhase("live");
