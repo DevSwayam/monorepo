@@ -1,6 +1,7 @@
 import { RedrawPanel } from "./redraw-panel";
+import { GradientCard } from "./gradient-card";
 import { Reveal } from "./motion";
-import { Panel, Section, SectionHead } from "./ui";
+import { Section, SectionHead } from "./ui";
 
 /**
  * §7, the line is not a commitment.
@@ -9,7 +10,7 @@ import { Panel, Section, SectionHead } from "./ui";
  * three endings meant one scenario had to carry two lessons at once.
  *
  * The lead is one imperative sentence. It used to be four, explaining what
- * stays put and what follows and which way the position turns — all of which
+ * stays put and what follows and which way the position turns, all of which
  * the panel underneath demonstrates the moment you touch it. Copy that narrates
  * an interactive demo is copy competing with it.
  */
@@ -24,9 +25,11 @@ export function Redraw() {
       </SectionHead>
 
       <Reveal>
-        <Panel raised>
-          <RedrawPanel />
-        </Panel>
+        <GradientCard>
+          <div className="cult-card overflow-hidden rounded-3xl">
+            <RedrawPanel />
+          </div>
+        </GradientCard>
       </Reveal>
     </Section>
   );

@@ -4,8 +4,8 @@ import { type Candle, fmtUsd } from "./market-data";
 /**
  * Candles, drawn the one way.
  *
- * Every chart on the page — the drawable one in the hero, the worked example,
- * the redraw walkthrough — had its own copy of this loop, and they had already
+ * Every chart on the page (the drawable one in the hero, the worked example,
+ * the redraw walkthrough) had its own copy of this loop, and they had already
  * drifted: different minimum body heights, different wick widths, the same
  * colour expression written six times. A candle should look like a candle
  * everywhere, so there is one of these now and the callers supply only what

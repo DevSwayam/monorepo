@@ -86,12 +86,12 @@ const TOL = 0.0022;
 const FLAT = 0.004;
 
 /**
- * A point of the drawn line, held as a price at a moment — never as a pixel.
+ * A point of the drawn line, held as a price at a moment: never as a pixel.
  *
  * The scale re-centres on the live price every tick. A line stored in pixels
  * stays where it was put while the axis slides underneath it, so it drifts off
  * the prices it was drawn at, and `resample` reads those same pixels back
- * through the new scale — quietly changing the legs and the money after the
+ * through the new scale, quietly changing the legs and the money after the
  * trade is already open. Storing the price means the line moves with the chart
  * and says the same thing for as long as it is on screen.
  */
@@ -109,7 +109,7 @@ type Phase = "live" | "drawing" | "running";
  *
  * Volatility is a fraction of price so the series behaves the same whatever it
  * is seeded at, and the body is built from an open and a close with wicks
- * outside both — a candle drawn as a single segment reads as a bar chart, not
+ * outside both: a candle drawn as a single segment reads as a bar chart, not
  * as a market.
  */
 function nextCandle(
@@ -244,7 +244,7 @@ const plot = (pt: Pt, sc: Scale) => ({
  *
  * A rising stretch is a long, a falling stretch is a short, and a turn is a
  * close plus an open. Reading only the first and last point would throw away
- * everything drawn in between — a line that dives and comes back would be a
+ * everything drawn in between: a line that dives and comes back would be a
  * trade in nothing, when what was drawn was plainly a short and then a long.
  *
  * `TOL` is what separates a turn from a wobble: a reversal smaller than that is
@@ -292,7 +292,7 @@ function legsFrom(prices: number[]) {
  * Recomputed from scratch on every tick rather than accumulated, so there is
  * one place where money is decided and no running total to drift. Fees come off
  * at each fill, and a bar whose wick takes equity down to the maintenance
- * requirement liquidates the position — which is the only thing that can end a
+ * requirement liquidates the position: which is the only thing that can end a
  * trade early, since the drawing sets no stop and no target.
  */
 function settle(bars: Candle[], legs: ReturnType<typeof legsFrom>, span: number) {
@@ -397,7 +397,7 @@ export function DrawCanvas({
    *
    * Re-rolling it per candle would average out to indifference and the run
    * would be a plain random walk again. One roll per trade is what makes a run
-   * feel like it has a character — this one is tracking your drawing, that one
+   * feel like it has a character: this one is tracking your drawing, that one
    * never had any intention of it.
    */
   const follow = useRef(0);
@@ -450,7 +450,7 @@ export function DrawCanvas({
    *
    * Held in a ref so the interval below can be started once and left alone.
    * Listing `shape` or `run` as deps would tear the interval down and rebuild
-   * it — restarting its countdown — on every single tick, and the candles
+   * it, restarting its countdown, on every single tick, and the candles
    * would never arrive a second apart.
    */
   const live = useRef({ phase, shape, run, feed });
@@ -486,7 +486,7 @@ export function DrawCanvas({
     const tick = setInterval(() => {
       const { phase: ph, shape: sh, run: rn, feed: fd } = live.current;
 
-      // Anything that is not a running trade keeps history scrolling — being
+      // Anything that is not a running trade keeps history scrolling, being
       // mid-drag included. A chart that freezes under the finger is the one
       // thing that gives away that it was never running.
       if (ph !== "running" || !sh) {
@@ -636,7 +636,7 @@ export function DrawCanvas({
     if (shape?.flat) {
       setPts([]);
       setPhase("live");
-      setNote("Too flat to trade — draw a bigger move.");
+      setNote("Too flat to trade. Draw a bigger move.");
       return;
     }
     setPhase("running");
@@ -645,7 +645,7 @@ export function DrawCanvas({
   /**
    * What the card shows: a live trade, the last result, or nothing at all.
    *
-   * A result outlives its trade on purpose — the run has already been folded
+   * A result outlives its trade on purpose, the run has already been folded
    * into history by the time it is set, and a number that vanished the instant
    * it resolved would be a number nobody read.
    */
@@ -684,12 +684,11 @@ export function DrawCanvas({
           <span className="rounded-full bg-surface-2 px-2.5 py-1 font-mono text-fg-muted text-xs tabular-nums">
             ${MARGIN} · {LEVERAGE}×
           </span>
-          {/* Honest label. These candles are a random walk, and a page that
-              prints "live" over one is lying about market data. */}
-          <span className="flex items-center gap-1.5 text-fg-subtle text-xs">
-            <span className="dc-live size-1.5 rounded-full bg-[var(--up)]" />
-            practice
-          </span>
+          {/* Honest label, and it stays: these candles are a random walk, and a
+              page that lets one pass for market data is lying. What went is the
+              pulsing green dot that used to sit next to it, which is the
+              universal "live feed" tell and was claiming the opposite. */}
+          <span className="text-fg-subtle text-xs">practice</span>
         </div>
       </div>
 
@@ -795,70 +794,62 @@ export function DrawCanvas({
             </g>
           ) : null}
 
-          {/* the invitation */}
+          {/*
+            The invitation.
+
+            This was five things at once: a marching dashed box around the
+            region, a ghost curve pulsing inside it, a plate, "DRAW HERE" in
+            letterspaced caps, and a second line of microcopy under that. Five
+            devices for one gesture is what a UI does when it does not trust
+            itself, and it read as a tutorial overlay rather than a chart.
+
+            What is left is the part that actually teaches: a mark at the
+            present, the shape of the gesture drawn faintly from it, and one
+            lowercase line. The crosshair cursor on the surface does the rest.
+          */}
           {phase === "live" ? (
             <g pointerEvents="none">
-              {/* Marked out, so the empty half reads as the part you are meant
-                  to touch rather than as a chart that failed to load. */}
-              <rect
-                className="dc-zone"
-                fill="none"
-                height={PLOT_B - PLOT_T - 12}
-                rx="14"
-                stroke="var(--brand)"
-                strokeDasharray="7 7"
-                strokeWidth="1.5"
-                width={PLOT_R - SPLIT - 12}
-                x={SPLIT + 6}
-                y={PLOT_T + 6}
+              {/* Now. The boundary is real information, unlike the box. */}
+              <line
+                stroke="var(--fg-subtle)"
+                strokeDasharray="2 5"
+                strokeOpacity="0.28"
+                strokeWidth="1"
+                x1={SPLIT}
+                x2={SPLIT}
+                y1={PLOT_T + 4}
+                y2={PLOT_B - 4}
               />
-              <g className="dc-hint">
-                <path
-                  d={hintPath(price, sc)}
-                  fill="none"
-                  stroke="var(--brand)"
-                  strokeDasharray="4 7"
-                  strokeLinecap="round"
-                  strokeOpacity="0.32"
-                  strokeWidth="2"
-                />
-                <circle cx={SPLIT} cy={sc.y(price)} fill="var(--brand)" r="4" />
-              </g>
-              <g className="dc-call">
-                {/* A plate, the same trick the price labels use. The entry line
-                    and the hint both run through here and 10px type on top of
-                    either is unreadable. */}
-                <rect
-                  fill="var(--surface)"
-                  height="44"
-                  rx="10"
-                  width="188"
-                  x={(SPLIT + PLOT_R) / 2 - 94}
-                  y={PLOT_T + 26}
-                />
-                <text
-                  fill="var(--brand)"
-                  fontSize="15"
-                  fontWeight="600"
-                  letterSpacing="2.5"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                  textAnchor="middle"
-                  x={(SPLIT + PLOT_R) / 2 + 1}
-                  y={PLOT_T + 44}
-                >
-                  DRAW HERE
-                </text>
-                <text
-                  fill="var(--fg-subtle)"
-                  fontSize="10.5"
-                  style={{ fontFamily: "var(--font-sans)" }}
-                  textAnchor="middle"
-                  x={(SPLIT + PLOT_R) / 2}
-                  y={PLOT_T + 61}
-                >
-                  drag where you think it goes
-                </text>
-              </g>
+
+              {/* The gesture, shown rather than described. Static: a hint that
+                  breathes is a hint that will not stop talking. */}
+              <path
+                d={hintPath(price, sc)}
+                fill="none"
+                stroke="var(--brand)"
+                strokeDasharray="3 8"
+                strokeLinecap="round"
+                strokeOpacity="0.28"
+                strokeWidth="2"
+              />
+              <circle
+                cx={SPLIT}
+                cy={sc.y(price)}
+                fill="var(--brand)"
+                fillOpacity="0.9"
+                r="3.5"
+              />
+
+              <text
+                fill="var(--fg-subtle)"
+                fontSize="11"
+                style={{ fontFamily: "var(--font-sans)" }}
+                textAnchor="middle"
+                x={(SPLIT + PLOT_R) / 2}
+                y={PLOT_B - 10}
+              >
+                drag to draw your line
+              </text>
             </g>
           ) : null}
         </svg>

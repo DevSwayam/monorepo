@@ -1,6 +1,6 @@
 import { ScenarioPanel } from "./scenario-panel";
 import { Reveal } from "./motion";
-import { Panel, Section, SectionHead } from "./ui";
+import { Section, SectionHead } from "./ui";
 
 /**
  * §6, one line, three endings, played rather than described.
@@ -15,15 +15,13 @@ export function WorkedExample() {
     <Section id="worked-example">
       <SectionHead
         id="worked-example-title"
-        lead="The line stays put. Only the price moves — here are three ways it can go."
+        lead="The line stays put. Only the price moves, and here are three ways that can go."
       >
         Say you draw this one on BTC.
       </SectionHead>
 
       <Reveal>
-        <Panel raised>
-          <ScenarioPanel />
-        </Panel>
+        <ScenarioPanel />
       </Reveal>
     </Section>
   );

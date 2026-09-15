@@ -189,7 +189,6 @@ const INSIDE = 60;
 
 export type Scenario = {
   key: string;
-  n: string;
   title: string;
   caption: string;
   /** Where the position actually closes, and what it is worth there. */
@@ -201,7 +200,6 @@ export type Scenario = {
 export const SCENARIOS: Scenario[] = [
   {
     key: "runs",
-    n: "01",
     title: "It runs",
     caption:
       "Price does roughly what you drew. It dips under you first, which is when most people bail.",
@@ -219,7 +217,6 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     key: "stalls",
-    n: "02",
     title: "It goes nowhere",
     caption:
       "An hour of nothing. You take it off where you got in, and leave with what you came with.",
@@ -237,7 +234,6 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     key: "breaks",
-    n: "03",
     title: "It breaks",
     caption:
       "It goes the wrong way and keeps going. You're out at the line you drew, and nobody had to call you.",
@@ -259,7 +255,7 @@ export const SCENARIOS: Scenario[] = [
  * What the trade is worth at a price, in the money this page quotes.
  *
  * The page sells to someone putting in a hundred dollars, not 2.5 BTC, so
- * every figure on it is a $100 stake trading like $500 — the same arithmetic
+ * every figure on it is a $100 stake trading like $500: the same arithmetic
  * the drawable chart in the hero uses. Quoting +$8,050 beside a canvas quoting
  * +$26 made the page read as though it were written for two different people.
  */
@@ -313,7 +309,7 @@ export function lineTo(end: number) {
  * percent and climbs back to where it started came out as a flat trade with an
  * enormous drawdown, which is the opposite of what was drawn. So the target is
  * the furthest the line ever gets from the entry, whichever side that is on,
- * and the floor is the furthest it goes the other way — the drawdown you drew
+ * and the floor is the furthest it goes the other way: the drawdown you drew
  * yourself and therefore agreed to sit through.
  *
  * Which way the trade faces falls out of the same test rather than being read

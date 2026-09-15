@@ -1,37 +1,30 @@
 import { LogoLink } from "./logo";
-import { SoonButton } from "./soon";
+import { ThemeToggle } from "./theme-toggle";
 
 /**
- * A floating glass bar, not a fixed strip.
+ * A plain topbar that scrolls away, like family.co's.
  *
- * The page scrolls underneath it rather than being pushed out of the way by an
- * opaque band, which is what the translucency is for. It is inset from all
- * three edges so it reads as an object on the page rather than as browser
- * chrome.
- *
- * Two elements, and that is the whole bar: the mark, and the one action. There
- * are no section links, so there is no menu to collapse into on small screens
- * either — the page is short enough to scroll, and the hero's own "See it
- * work" button covers the one jump worth offering.
- *
- * `pointer-events-none` on the wrapper, with the bar opting back in, keeps the
- * empty gutters either side from swallowing clicks meant for the hero behind
- * them.
+ * It used to be a fixed glass pill. Over a white page the translucency has
+ * nothing to tint, so the pill read as an empty outlined box floating over the
+ * content, and it sat on top of the canvas you are meant to draw on.
  */
 export function SiteNav() {
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-4 pt-3 sm:px-6 sm:pt-4">
-      <div className="container-x pointer-events-auto">
-        <div className="glass flex h-14 items-center justify-between gap-4 rounded-full py-2 pr-2 pl-5">
-          <LogoLink />
+    <header>
+      <div className="container-x flex items-center justify-between gap-6 px-4 py-4 sm:px-6 md:py-6 lg:px-8">
+        <LogoLink />
 
-          <SoonButton
-            className="pressable h-10 rounded-full bg-linear-to-b from-brand-soft to-brand px-5 shadow-brand sm:h-10"
-            detail="Opens with early access."
-            size="sm"
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+
+          {/* An anchor, not a button with a toast behind it: the thing it
+              promises is on this page. */}
+          <a
+            className="pressable flex h-9 shrink-0 items-center rounded-full bg-primary px-4 font-medium text-[0.9375rem] text-primary-foreground transition-colors duration-micro ease-smooth-out hover:bg-primary/90"
+            href="#start"
           >
-            Start drawing
-          </SoonButton>
+            Join waitlist
+          </a>
         </div>
       </div>
     </header>

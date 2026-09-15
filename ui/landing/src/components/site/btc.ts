@@ -15,7 +15,7 @@ import { type Candle, CANDLES, ORDER } from "./market-data";
  * Fetched on the server and cached for a minute, so a burst of visitors is one
  * upstream call rather than one each, and no key or origin is ever exposed to
  * the browser. If it fails for any reason the page falls back to the seeded
- * series it used to ship — a landing page must not go blank because an
+ * series it used to ship, a landing page must not go blank because an
  * exchange had a bad minute.
  */
 

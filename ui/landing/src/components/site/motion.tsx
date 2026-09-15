@@ -7,14 +7,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { cn } from "@/lib/utils";
 
 /**
  * Arrival, once. The observer disconnects on first intersection, so a section
  * scrolled past twice doesn't animate twice.
  *
  * `index` offsets the animation-delay so siblings arrive as one gesture with a
- * falloff. Keep the group small — six at most — or the last item lands after
+ * falloff. Keep the group small, six at most, or the last item lands after
  * the reader has moved on.
  *
  * The pre-state is CSS (`[data-reveal]`) rather than React state, so the
@@ -71,54 +70,6 @@ export function Reveal({
 }
 
 /**
- * A soft brand-tinted light tracking the cursor across a card. Decoration
- * only, and mouse-only: there is no cursor to follow on touch, and it is
- * dropped under reduced motion.
- */
-export function Spotlight({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
-
-  return (
-    <div
-      className={cn("relative", className)}
-      onPointerLeave={() => setActive(false)}
-      onPointerMove={(event) => {
-        if (event.pointerType !== "mouse") {
-          return;
-        }
-        const el = ref.current;
-        if (!el) {
-          return;
-        }
-        const rect = el.getBoundingClientRect();
-        el.style.setProperty("--x", `${event.clientX - rect.left}px`);
-        el.style.setProperty("--y", `${event.clientY - rect.top}px`);
-        setActive(true);
-      }}
-      ref={ref}
-    >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-slow ease-smooth-out motion-reduce:hidden"
-        style={{
-          opacity: active ? 1 : 0,
-          background:
-            "radial-gradient(420px circle at var(--x) var(--y), color-mix(in srgb, var(--brand) 9%, transparent), transparent 70%)",
-        }}
-      />
-      {children}
-    </div>
-  );
-}
-
-/**
  * Whether the reader has asked for less movement.
  *
  * Live, not read once: someone who turns the system setting on mid-visit gets
@@ -141,7 +92,7 @@ export function useReducedMotion() {
  *
  * The walkthroughs use this to hold their clock while they are scrolled away:
  * a chart that plays to nobody has usually finished by the time it is read.
- * Unlike `Reveal`, this keeps watching — it reports leaving as well as
+ * Unlike `Reveal`, this keeps watching, it reports leaving as well as
  * arriving.
  */
 export function useInView<T extends HTMLElement>(threshold: number) {

@@ -14,12 +14,14 @@ import {
   type Scenario,
 } from "./market-data";
 import { markAt, ScenarioChart } from "./scenario-chart";
+import { StepCard } from "./step-card";
 
 /** One scenario plays over this long, then holds so the ending can be read. */
 const RUN_MS = 4400;
 const HOLD_MS = 2400;
 
-function Slide({ scenario, step }: { scenario: Scenario; step: number }) {
+/** The figures beside the chart. Same rows as before, no card around them. */
+function Rail({ scenario, step }: { scenario: Scenario; step: number }) {
   const mark = markAt(scenario, step);
   const pnl = pnlAt(mark);
   const done = step >= FORECAST_BARS;
@@ -27,64 +29,56 @@ function Slide({ scenario, step }: { scenario: Scenario; step: number }) {
     Math.round(pnl) === 0 ? "text-fg-muted" : pnl > 0 ? "text-up" : "text-down";
 
   return (
-    <div className="grid w-full shrink-0 gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_18rem] md:p-4">
-      <div className="overflow-hidden rounded-xl bg-background/60 px-3 py-5 shadow-[inset_0_0_0_1px_var(--edge)] md:px-5 md:py-7">
-        <ScenarioChart scenario={scenario} step={step} />
+    <div className="flex flex-col gap-6 rounded-2xl bg-white/4 p-5">
+      <div className="flex items-baseline justify-between">
+        <span className="font-mono text-fg-subtle text-kicker">Bitcoin</span>
+        <span className="rounded-full bg-brand/14 px-2.5 py-1 font-mono text-brand text-xs">
+          {ORDER.side === "long" ? "up" : "down"} {ORDER.leverage}x
+        </span>
       </div>
 
-      <aside className="flex flex-col gap-7 rounded-xl bg-surface-2 p-5 shadow-[inset_0_0_0_1px_var(--edge)]">
-        <div className="flex items-baseline justify-between">
-          <span className="font-mono text-fg-subtle text-kicker">
-            {"Bitcoin"}
-          </span>
-          <span className="rounded-full bg-brand/14 px-2.5 py-1 font-mono text-brand text-xs">
-            {ORDER.side === "long" ? "up" : "down"} {ORDER.leverage}×
-          </span>
-        </div>
+      <div className="space-y-3.5">
+        <RailRow label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
+        <RailRow label="You put in" value={`$${STAKE}`} />
+      </div>
 
-        <div className="space-y-3.5">
-          <RailRow label="You're in at" value={fmtUsd(ORDER.entry, 2)} />
-          <RailRow label="You put in" value={`$${STAKE}`} />
-        </div>
+      <div className="space-y-3.5">
+        <RailRow label="Right now" value={fmtUsd(mark, 2)} />
+        <RailRow
+          label={done ? "Ended" : "So far"}
+          tone={tone}
+          value={signed(pnl)}
+        />
+      </div>
 
-        <div className="space-y-3.5">
-          <RailRow label="Right now" value={fmtUsd(mark, 2)} />
-          <RailRow
-            label={done ? "Ended" : "So far"}
-            tone={tone}
-            value={signed(pnl)}
-          />
-        </div>
-
-        <div className="mt-auto">
-          <p className="text-fg-muted text-sm leading-[1.7]">
-            {scenario.caption}
-          </p>
-          <p
-            className={cn(
-              "mt-4 font-mono text-xs transition-opacity duration-300",
-              done ? "opacity-100" : "opacity-0",
-            )}
-          >
-            <span className="text-fg-subtle">{scenario.exitLabel}</span>{" "}
-            <span className={tone}>{signed(pnlAt(scenario.exit))}</span>
-          </p>
-        </div>
-      </aside>
+      <p
+        className={cn(
+          "font-mono text-xs transition-opacity duration-300",
+          done ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <span className="text-fg-subtle">{scenario.exitLabel}</span>{" "}
+        <span className={tone}>{signed(pnlAt(scenario.exit))}</span>
+      </p>
     </div>
   );
 }
 
 /**
- * §6, the hero's panel with the clock started.
+ * The three endings, played inside the dark stepped card.
  *
- * Deliberately the same object as the frame at the top of the page: a selector,
- * the chart well, and the rail of figures beside it. The page has one way of
- * showing the product, so the three endings slide through that frame rather
- * than arriving as a stack of cards laid over it.
+ * It used to be a segmented control over a sliding track of three full slides,
+ * each carrying its own chart well and its own bordered rail. Three copies of
+ * the frame sliding past each other is a lot of furniture for one idea, and on
+ * paper the nested wells turned into boxes inside boxes inside boxes.
  *
- * Only the scenario on screen runs. The other two sit at their ending, which
- * is also what you want to land on when one slides into view behind a click.
+ * Now there is one frame. The scenario's name and caption sit at the top, the
+ * chart runs in the middle, the figures sit beside it, and the three pills at
+ * the bottom carry what each ending is worth so the comparison is readable
+ * without clicking anything.
+ *
+ * Only the scenario on screen runs, and it holds at its ending long enough to
+ * be read before the next one takes over.
  */
 export function ScenarioPanel() {
   const [active, setActive] = useState(0);
@@ -123,115 +117,49 @@ export function ScenarioPanel() {
   };
 
   const shown = reduced ? FORECAST_BARS : step;
+  const scenario = SCENARIOS[active];
 
   return (
     <div ref={ref}>
-      <div className="flex items-center gap-2 px-3 pt-3 md:px-4 md:pt-4">
-        <div className="relative grid flex-1 grid-cols-3 rounded-xl bg-background/60 p-1 shadow-[inset_0_0_0_1px_var(--edge)]">
-          {/* The pill carries the selection, so the buttons themselves never
-              change ground. Translating it keeps the move on the compositor;
-              animating `left` would not. */}
-          <span
-            aria-hidden="true"
-            className="absolute top-1 bottom-1 left-1 rounded-lg bg-surface-2 shadow-[inset_0_0_0_1px_var(--edge-bright)]"
-            style={{
-              width: "calc((100% - 0.5rem) / 3)",
-              transform: `translateX(calc(${active} * 100%))`,
-              transition:
-                "transform var(--duration-fast) var(--ease-smooth-out)",
-            }}
-          />
-          {SCENARIOS.map((s, i) => {
-            const on = i === active;
-            const out = pnlAt(s.exit);
-            return (
-              <button
-                aria-current={on}
-                className="relative cursor-pointer rounded-lg px-3 py-2.5 text-left md:px-4"
-                key={s.key}
-                onClick={() => pick(i)}
-                type="button"
-              >
-                <span className="flex items-baseline gap-2.5">
-                  <span
-                    className={cn(
-                      "font-mono text-xs tabular-nums transition-colors duration-fast ease-smooth-out",
-                      on ? "text-brand" : "text-fg-subtle",
-                    )}
-                  >
-                    {s.n}
-                  </span>
-                  <span
-                    className={cn(
-                      "truncate text-sm transition-colors duration-fast ease-smooth-out",
-                      on ? "text-foreground" : "text-fg-subtle",
-                    )}
-                  >
-                    {s.title}
-                  </span>
-                </span>
-                <span
-                  className={cn(
-                    "mt-1.5 block font-mono text-sm tabular-nums transition-opacity duration-fast ease-smooth-out",
-                    Math.round(out) === 0
-                      ? "text-fg-muted"
-                      : out > 0
-                        ? "text-up"
-                        : "text-down",
-                    on ? "opacity-100" : "opacity-55",
-                  )}
-                >
-                  {signed(out)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {reduced ? null : (
-          <button
-            aria-label={paused ? "Play the walkthrough" : "Pause the walkthrough"}
-            className="pressable flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface-2 text-fg-subtle shadow-[inset_0_0_0_1px_var(--edge)] transition-colors duration-fast ease-smooth-out hover:text-foreground"
-            onClick={() => setPaused((v) => !v)}
-            type="button"
-          >
-            <svg
-              aria-hidden="true"
-              className="size-3"
-              fill="currentColor"
-              viewBox="0 0 12 12"
+      <StepCard
+        action={
+          reduced ? null : (
+            <button
+              aria-label={paused ? "Play the walkthrough" : "Pause the walkthrough"}
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/8 text-fg-subtle transition-colors duration-fast ease-smooth-out hover:bg-white/14 hover:text-foreground"
+              onClick={() => setPaused((v) => !v)}
+              type="button"
             >
-              {paused ? (
-                <path d="M2 0 L12 6 L2 12 Z" />
-              ) : (
-                <>
-                  <rect height="12" width="3.5" x="1" y="0" />
-                  <rect height="12" width="3.5" x="7.5" y="0" />
-                </>
-              )}
-            </svg>
-          </button>
-        )}
-      </div>
-
-      <div className="overflow-hidden">
-        <div
-          className="flex"
-          style={{
-            transform: `translateX(-${active * 100}%)`,
-            transition:
-              "transform 560ms var(--ease-smooth-out)",
-          }}
-        >
-          {SCENARIOS.map((s, i) => (
-            <div className="w-full shrink-0" inert={i !== active} key={s.key}>
-              <Slide
-                scenario={s}
-                step={i === active ? shown : FORECAST_BARS}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+              <svg
+                aria-hidden="true"
+                className="size-2.5"
+                fill="currentColor"
+                viewBox="0 0 12 12"
+              >
+                {paused ? (
+                  <path d="M2 0 L12 6 L2 12 Z" />
+                ) : (
+                  <>
+                    <rect height="12" width="3.5" x="1" y="0" />
+                    <rect height="12" width="3.5" x="7.5" y="0" />
+                  </>
+                )}
+              </svg>
+            </button>
+          )
+        }
+        active={active}
+        aside={<Rail scenario={scenario} step={shown} />}
+        bodyClass="lg:h-[22rem]"
+        caption={scenario.caption}
+        label="Scenarios"
+        onSelect={pick}
+        slideKey={scenario.key}
+        steps={SCENARIOS.map((s) => ({ key: s.key, label: s.title }))}
+        title={scenario.title}
+      >
+        <ScenarioChart scenario={scenario} step={shown} />
+      </StepCard>
     </div>
   );
 }

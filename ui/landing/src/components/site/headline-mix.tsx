@@ -37,7 +37,7 @@ export function HeadlineMix({ className }: { className?: string }) {
               // The inter-word space is set outside the span on purpose. The
               // pixel face carries a much wider space than the grotesque, so a
               // space caught inside a swapped word opens a visible hole next to
-              // it — and which word is swapped changes on every request, so the
+              // it, and which word is swapped changes on every request, so the
               // hole moves around the headline.
               <span key={word}>
                 <span

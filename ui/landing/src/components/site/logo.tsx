@@ -29,7 +29,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 /**
  * The mark and the wordmark, linking home. Used by the nav and the footer,
- * which had a byte-identical copy each — including the spelling, which is the
+ * which had a byte-identical copy each, including the spelling, which is the
  * one thing on the page that must never drift.
  */
 export function LogoLink({ className }: { className?: string }) {

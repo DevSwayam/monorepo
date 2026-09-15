@@ -18,7 +18,7 @@ const FAQS = [
   },
   {
     q: "Can I change it after?",
-    a: "Yes — draw over it. That updates the trade you already have rather than starting a second one, and it costs nothing.",
+    a: "Yes, draw over it. That updates the trade you already have rather than starting a second one, and it costs nothing.",
   },
   {
     q: "Do you hold my money?",

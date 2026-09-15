@@ -1,13 +1,16 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useEffect, useState } from "react";
 import { smoothPath } from "./market-data";
-import { Reveal, Spotlight } from "./motion";
+import { Reveal, useInView, useReducedMotion } from "./motion";
+import { StepCard } from "./step-card";
 import { Section, SectionHead } from "./ui";
 
 /**
  * §5, what you actually do. Four equal cards, in the order you do them.
  *
  * This was a four-cell bento headed "Four steps, and you only do the first
- * one" — a mechanism brag that told a newcomer there were four steps and then
+ * one": a mechanism brag that told a newcomer there were four steps and then
  * left them wondering what the hidden three were. Its cells were dashboards:
  * a leverage meter with a liquidation price, a receipt proving no slippage, a
  * risk-reward scale in R multiples over 2.5 BTC. Every one answered a question
@@ -18,7 +21,7 @@ import { Section, SectionHead } from "./ui";
  * caption is a benefit rather than a mechanism, and no dollar figure competes
  * with the canvas above, which owns the numbers.
  *
- * Order is the real product flow — size, leverage, line — not the order that
+ * Order is the real product flow (size, leverage, line) rather than the order that
  * makes the best headline. Drawing is the identity of the product, so putting
  * it first was tempting; it is third because that is when you do it.
  *
@@ -30,31 +33,26 @@ import { Section, SectionHead } from "./ui";
  * the title says.
  */
 const STEPS: {
-  n: string;
   title: string;
   caption: string;
   visual: ReactNode;
 }[] = [
   {
-    n: "01",
     title: "Pick your size",
     caption: "How much you put in. Twenty dollars or two thousand.",
     visual: <Amount />,
   },
   {
-    n: "02",
     title: "Set leverage",
     caption: "Put in $100, trade like $500. You choose how far it goes.",
     visual: <Leverage />,
   },
   {
-    n: "03",
     title: "Draw it",
     caption: "One line, roughly where you think it goes. No order types to learn.",
     visual: <DrawnLine />,
   },
   {
-    n: "04",
     title: "Watch it make money",
     caption: "The closer the chart follows your line, the better you do.",
     visual: <Tracking />,
@@ -79,7 +77,7 @@ function DrawnLine() {
   return (
     <svg
       aria-hidden="true"
-      className="h-full w-full"
+      className="w-full"
       fill="none"
       viewBox="0 0 220 96"
     >
@@ -107,13 +105,13 @@ function DrawnLine() {
 /** What you put in. The same three chips the canvas offers, so the two agree. */
 function Amount() {
   return (
-    <div className="flex h-full items-center gap-2">
+    <div className="flex w-full items-center justify-center gap-3">
       {[20, 100, 500].map((s) => (
         <span
           className={
             s === 100
-              ? "rounded-full bg-brand/15 px-3 py-1 font-mono text-brand text-sm tabular-nums"
-              : "rounded-full bg-surface-2 px-3 py-1 font-mono text-fg-muted text-sm tabular-nums"
+              ? "rounded-full bg-brand/15 px-6 py-3 font-mono text-2xl text-brand tabular-nums"
+              : "rounded-full bg-surface-2 px-6 py-3 font-mono text-2xl text-fg-muted tabular-nums"
           }
           key={s}
         >
@@ -129,13 +127,13 @@ function Amount() {
  *
  * The meter carries the idea and the caption carries the number, so the card
  * reads as something you set rather than something done to you. The multiple
- * itself stays out of the visual — "$500" is the fact a person can act on,
+ * itself stays out of the visual, "$500" is the fact a person can act on,
  * "5×" is the fact they have to convert first.
  */
 function Leverage() {
   return (
-    <div className="flex h-full flex-col justify-center gap-3">
-      <div className="grid h-2 auto-cols-fr grid-flow-col gap-1">
+    <div className="flex w-full flex-col justify-center gap-5">
+      <div className="grid h-4 auto-cols-fr grid-flow-col gap-1.5">
         {Array.from({ length: 10 }, (_, i) => (
           <span
             className={
@@ -149,8 +147,8 @@ function Leverage() {
         ))}
       </div>
       <div className="flex items-baseline justify-between">
-        <span className="text-fg-subtle text-xs">trading with</span>
-        <span className="font-mono text-brand text-sm tabular-nums">$500</span>
+        <span className="text-body text-fg-subtle">trading with</span>
+        <span className="font-mono text-3xl text-brand tabular-nums">$500</span>
       </div>
     </div>
   );
@@ -168,7 +166,9 @@ function Leverage() {
  * The drift figures are a fixed list rather than random so the server and the
  * client render the same picture.
  */
-const DRIFT = [3, -4, 2, 6, -3, 4, -2, 5, -5, 3, 7, -2];
+const DRIFT = [
+  3, -4, 2, 6, -3, 4, -2, 5, -5, 3, 7, -2, 4, -3, 6, -4, 2, 5, -2, 3,
+];
 
 function Tracking() {
   const pts = LINE_PTS;
@@ -186,20 +186,26 @@ function Tracking() {
   return (
     <svg
       aria-hidden="true"
-      className="h-full w-full"
+      className="w-full"
       fill="none"
       viewBox="0 0 220 96"
     >
+      {/*
+        The drawn line is the reference, not the subject. At strokeWidth 2 with
+        a 3/5 dash it scaled up into a thick dotted snake with a dozen candles
+        scattered along it; thinner and finer, it reads as the line the price is
+        being measured against.
+      */}
       <path
         d={smoothPath(pts)}
         stroke="var(--brand)"
-        strokeDasharray="3 5"
+        strokeDasharray="2 4"
         strokeLinecap="round"
-        strokeOpacity="0.45"
-        strokeWidth="2"
+        strokeOpacity="0.55"
+        strokeWidth="1.3"
       />
       {DRIFT.map((d, i) => {
-        const x = 12 + i * 17;
+        const x = 9 + i * 10.6;
         const mid = at(x) + d;
         const up = d <= 0;
         const colour = up ? "var(--up)" : "var(--down)";
@@ -211,7 +217,7 @@ function Tracking() {
           >
             <line
               stroke={colour}
-              strokeWidth="1"
+              strokeWidth="0.9"
               x1={x}
               x2={x}
               y1={mid - 5}
@@ -232,31 +238,65 @@ function Tracking() {
   );
 }
 
+/**
+ * The four steps, as one dark stepped card.
+ *
+ * Four separate cards gave each step equal weight and equal silence; a reader
+ * saw four boxes and read none of them. One card that moves has somewhere for
+ * the eye to land, and it makes the order, which is the actual point of the
+ * section, impossible to miss.
+ */
+const CYCLE_MS = 4200;
+
 export function HowItWorks() {
+  const [active, setActive] = useState(0);
+  const [held, setHeld] = useState(false);
+  const reduced = useReducedMotion();
+  const [ref, inView] = useInView<HTMLDivElement>(0.4);
+
+  // Held while the pointer or focus is inside, so nothing moves under someone
+  // who is reading it, and stopped off screen so it is not cycling to an empty
+  // room.
+  useEffect(() => {
+    if (reduced || held || !inView) {
+      return;
+    }
+    const id = setInterval(
+      () => setActive((i) => (i + 1) % STEPS.length),
+      CYCLE_MS,
+    );
+    return () => clearInterval(id);
+  }, [reduced, held, inView]);
+
+  const step = STEPS[active];
+
   return (
     <Section id="how-it-works">
       <SectionHead id="how-title" lead="Size, leverage, one line. That's it.">
         Nothing to learn.
       </SectionHead>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {STEPS.map((step, i) => (
-          <Reveal className="group" index={i} key={step.n}>
-            <Spotlight className="surface sheen-top liftable h-full overflow-hidden rounded-2xl">
-              <div className="flex h-full flex-col p-6 md:p-7">
-                <div className="h-24">{step.visual}</div>
-                <div className="mt-7 flex items-center gap-2.5">
-                  <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[0.6875rem] text-fg-subtle tabular-nums">
-                    {step.n}
-                  </span>
-                  <h3 className="text-foreground text-title">{step.title}</h3>
-                </div>
-                <p className="mt-2.5 text-body text-fg-muted">{step.caption}</p>
-              </div>
-            </Spotlight>
-          </Reveal>
-        ))}
-      </div>
+      <Reveal>
+        <div
+          onBlur={() => setHeld(false)}
+          onFocus={() => setHeld(true)}
+          onPointerEnter={() => setHeld(true)}
+          onPointerLeave={() => setHeld(false)}
+          ref={ref}
+        >
+          <StepCard
+            active={active}
+            caption={step.caption}
+            label="Steps"
+            onSelect={setActive}
+            slideKey={step.title}
+            steps={STEPS.map((s) => ({ key: s.title, label: s.title }))}
+            title={step.title}
+          >
+            {step.visual}
+          </StepCard>
+        </div>
+      </Reveal>
     </Section>
   );
 }

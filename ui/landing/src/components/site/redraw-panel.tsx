@@ -82,7 +82,7 @@ const KEY_STEP = 100;
  *
  * A hand chasing a market does not travel in one smooth arc. It holds the old
  * view a beat too long, yanks up past the candles, loses its nerve and drops
- * most of the way back, then goes again — the swings shrinking each time until
+ * most of the way back, then goes again, the swings shrinking each time until
  * it settles. Every waypoint is one of those decisions, and easing between
  * them puts a full stop and a reversal where a real hand has one.
  *
@@ -143,19 +143,30 @@ export function RedrawPanel() {
   const [taken, setTaken] = useState(false);
   const [grabbing, setGrabbing] = useState(false);
   const [replay, setReplay] = useState(0);
+  // The walkthrough is a demonstration, not an idle animation. It used to be
+  // tied to `inView` alone, so the cursor swept in and hauled the line up again
+  // every single time the panel scrolled back onto the screen. Once is the
+  // point; the Replay button is there for anyone who wants it twice.
+  const played = useRef(false);
 
   const reduced = useReducedMotion();
   const [ref, inView] = useInView<HTMLDivElement>(0.3);
   const plot = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!inView || reduced || taken) return;
+    if (!inView || reduced || taken || played.current) return;
     let raf = 0;
     const t0 = performance.now();
     const tick = (now: number) => {
       const e = now - t0;
       setT(Math.min(e, DEMO_MS));
-      if (e < DEMO_MS) raf = requestAnimationFrame(tick);
+      if (e < DEMO_MS) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        // Only once it has actually finished. Marking it on the way in would
+        // strand the line mid-pull for anyone who scrolled past halfway.
+        played.current = true;
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -184,7 +195,7 @@ export function RedrawPanel() {
   const shape = lineTo(end);
   const level = levelsFor(shape);
   // Quoted the way the canvas quotes it: a $100 stake trading like $500. A
-  // line that never dips sets no floor, so the whole stake is at risk — the
+  // line that never dips sets no floor, so the whole stake is at risk, the
   // same reason the canvas refuses to print "$0" there.
   const win = Math.abs(pnlAt(level.target));
   const lose =
@@ -239,10 +250,10 @@ export function RedrawPanel() {
   const caption = taken
     ? "Same money in, same trade. Only the two prices that end it moved."
     : t < T_PULL
-      ? "This is the line you drew — down, from where you got in."
+      ? "This is the line you drew: down, from where you got in."
       : t < T_LET_GO
         ? "Price went the other way. Pull the line up and both numbers follow."
-        : "Your turn — drag the handle, or use the arrow keys.";
+        : "Your turn. Drag the handle, or use the arrow keys.";
 
   return (
     <div ref={ref}>
@@ -528,6 +539,7 @@ export function RedrawPanel() {
         <button
           className="pressable cursor-pointer rounded-full bg-surface-2 px-3.5 py-1.5 font-mono text-fg-subtle text-xs shadow-[inset_0_0_0_1px_var(--edge)] transition-colors duration-fast ease-smooth-out hover:text-foreground"
           onClick={() => {
+            played.current = false;
             setTaken(false);
             setHeld(null);
             setT(0);

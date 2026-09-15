@@ -1,11 +1,12 @@
 import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
+import { GradientCard } from "./gradient-card";
 import { HeadlineMix } from "./headline-mix";
 import { Reveal } from "./motion";
 import { Section } from "./ui";
 
 /**
- * §2, the claim, then the thing itself — except the thing is now usable.
+ * §2, the claim, then the thing itself: except the thing is now usable.
  *
  * The page used to carry a picture of the product here, and a picture cannot
  * teach a gesture. Everything below the fold was doing the work of explaining
@@ -21,7 +22,7 @@ export async function Hero() {
   const market = await getBtcMarket();
 
   return (
-    <Section className="pt-28 pb-10 md:pt-36 md:pb-14 lg:pt-40" id="top">
+    <Section className="pt-6 pb-10 md:pt-10 md:pb-14" id="top">
       <div className="flex flex-col items-center text-center">
         <Reveal index={1}>
           <HeadlineMix className="mt-2" />
@@ -38,16 +39,15 @@ export async function Hero() {
       {/* The product, live. Real BTC candles, the real gesture; nothing is at
           stake and no wallet is connected. */}
       <Reveal className="mt-14 md:mt-20" index={4}>
-        <div
-          className="surface-raised sheen-top scroll-mt-28 overflow-hidden rounded-3xl"
-          id="try"
-        >
-          <DrawCanvas
-            candles={market.candles}
-            live={market.live}
-            price={market.price}
-          />
-        </div>
+        <GradientCard className="scroll-mt-28" id="try">
+          <div className="cult-card overflow-hidden rounded-3xl">
+            <DrawCanvas
+              candles={market.candles}
+              live={market.live}
+              price={market.price}
+            />
+          </div>
+        </GradientCard>
       </Reveal>
     </Section>
   );
