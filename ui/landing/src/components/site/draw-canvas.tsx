@@ -1,6 +1,7 @@
 "use client";
 
 import { Candles, spacing } from "./chart";
+import { SoonButton } from "./soon";
 import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -100,7 +101,7 @@ type Pt = {
   t: number;
   price: number;
 };
-type Phase = "live" | "drawing" | "running";
+type Phase = "live" | "drawing" | "running" | "settled";
 
 // --- the feed --------------------------------------------------------------
 
@@ -388,9 +389,8 @@ export function DrawCanvas({
   const [feed, setFeed] = useState<Candle[]>(() => seed.slice(-HISTORY));
   const [run, setRun] = useState<Candle[]>([]);
   const [entry, setEntry] = useState(seedPrice);
-  const [result, setResult] = useState<{ won: boolean; pnl: number } | null>(
-    null,
-  );
+  type Result = { won: boolean; pnl: number; liquidated: boolean };
+  const [result, setResult] = useState<Result | null>(null);
   const [note, setNote] = useState<string | null>(null);
   /**
    * How closely this market respects the line, fixed for the whole trade.
@@ -515,19 +515,22 @@ export function DrawCanvas({
 
       // The drawing sets no stop and no target, so only two things end a
       // trade: the venue liquidating a leg, or the bars running out.
-      const finish = (net: number) => {
-        setResult({ won: net >= 0, pnl: net });
+      // The run folds into history so the chart carries straight on, but the
+      // canvas does not clear itself: a trade that wiped the board the instant
+      // it ended was a trade nobody got to read the end of.
+      const finish = (net: number, bk: ReturnType<typeof settle>) => {
+        setResult({ won: net >= 0, pnl: net, liquidated: bk.liquidated });
         setFeed((f) => [...f, ...next].slice(-HISTORY));
         setRun([]);
         setPts([]);
-        setPhase("live");
+        setPhase("settled");
       };
 
       const bk = settle(next, sh.legs, sh.span);
       if (bk.liquidated) {
-        finish(-MARGIN);
+        finish(-MARGIN, bk);
       } else if (next.length >= RUN_BARS) {
-        finish(bk.net);
+        finish(bk.net, bk);
       }
 
     }, TICK_MS);
@@ -591,6 +594,12 @@ export function DrawCanvas({
   );
 
   const onDown = (e: ReactPointerEvent) => {
+    // The summary covers the canvas, so this should never fire while it is up.
+    // Guarded anyway: a drag that started a trade behind the card would be a
+    // trade nobody meant to place.
+    if (phase === "settled") {
+      return;
+    }
     const p = toLocal(e);
     if (!p) {
       return;
@@ -656,9 +665,7 @@ export function DrawCanvas({
           now: book?.net ?? 0,
           side: book?.pos ? (book.pos.d > 0 ? "long" : "short") : "flat",
         })
-      : result
-        ? ({ kind: "settled" as const, ...result })
-        : note
+      : note
           ? ({ kind: "note" as const, note })
           : null;
 
@@ -806,8 +813,10 @@ export function DrawCanvas({
             What is left is the part that actually teaches: a mark at the
             present, the shape of the gesture drawn faintly from it, and one
             lowercase line. The crosshair cursor on the surface does the rest.
+
+            `!result` keeps it from reappearing under the summary card.
           */}
-          {phase === "live" ? (
+          {phase === "live" && !result ? (
             <g pointerEvents="none">
               {/* Now. The boundary is real information, unlike the box. */}
               <line
@@ -893,24 +902,84 @@ export function DrawCanvas({
                     : `${stats.side} · $${NOTIONAL} of BTC`}
                 </span>
               </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <span className="text-fg-subtle text-xs">
-                  {stats.won ? "Called it" : "Went the other way"}
-                </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/*
+          The end of the trade, held up rather than swept away.
+
+          It sits over the canvas because the canvas is what it is about, and
+          the chart keeps running behind it — the market does not wait for
+          anyone to finish reading. Drawing again is one button; the other is
+          the only place on the page that asks for anything.
+        */}
+        {phase === "settled" && result ? (
+          <div className="absolute inset-0 grid place-items-center p-4">
+            {/* The scrim. A card this size over moving candles is unreadable
+                without one, and pushing the market back is also what says the
+                trade is over. */}
+            <div
+              aria-hidden="true"
+              className="dc-scrim absolute inset-0 bg-background/72 backdrop-blur-[3px]"
+            />
+            <div
+              aria-live="polite"
+              className="dc-summary surface-raised relative w-full max-w-[21rem] rounded-2xl p-6"
+            >
+              {/* Outcome first, in three words, carrying the colour. */}
+              <p className="flex items-center justify-center gap-2 text-kicker">
                 <span
+                  aria-hidden="true"
                   className={cn(
-                    "font-mono text-lg tabular-nums",
-                    stats.won ? "text-[var(--up)]" : "text-[var(--down)]",
+                    "size-1.5 rounded-full",
+                    result.won ? "bg-[var(--up)]" : "bg-[var(--down)]",
                   )}
+                />
+                <span
+                  className={
+                    result.won ? "text-[var(--up)]" : "text-[var(--down)]"
+                  }
                 >
-                  {stats.won ? "+" : "−"}${fmtUsd(Math.abs(stats.pnl))}
+                  {result.liquidated
+                    ? "Liquidated"
+                    : result.won
+                      ? "Profit"
+                      : "Loss"}
                 </span>
-                <span className="text-fg-subtle text-[0.6875rem]">
-                  draw again any time
-                </span>
+              </p>
+
+              {/* The figure is the point, so nothing else on the card competes
+                  with it for size. */}
+              <p
+                className={cn(
+                  "mt-2 text-center font-mono text-[2.75rem] leading-none tracking-[-0.03em] tabular-nums",
+                  result.won ? "text-[var(--up)]" : "text-[var(--down)]",
+                )}
+              >
+                {result.won ? "+" : "−"}${fmtUsd(Math.abs(result.pnl))}
+              </p>
+
+              <div className="mt-6 flex flex-col gap-2">
+                <SoonButton
+                  className="pressable h-11 w-full rounded-full bg-primary text-base text-primary-foreground transition-colors duration-micro ease-smooth-out hover:bg-primary/90 sm:h-11 sm:text-base"
+                  detail="Drawing with real money opens with the public testnet."
+                  size="sm"
+                >
+                  Start drawing for real
+                </SoonButton>
+                <button
+                  className="pressable h-9 rounded-full text-fg-muted text-sm transition-colors duration-fast ease-smooth-out hover:text-foreground"
+                  onClick={() => {
+                    setResult(null);
+                    setPhase("live");
+                  }}
+                  type="button"
+                >
+                  Draw another
+                </button>
               </div>
-            )}
+            </div>
           </div>
         ) : null}
       </div>

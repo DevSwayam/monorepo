@@ -559,6 +559,11 @@
   --background: var(--bg);
   --border: var(--hairline);
   --muted-foreground: var(--fg-muted);
+  /* A filled button on this card is light-on-dark, whichever way the page is
+     set. Without this it inherits the page's near-black primary and paints
+     #171717 onto #1b1a18. */
+  --primary: #fafaf9;
+  --primary-foreground: #121110;
 
   --color-foreground: var(--fg);
   --color-background: var(--bg);
@@ -746,9 +751,51 @@
   animation: dc-bar 320ms var(--dc-d, 0ms) both var(--ease-out-expo);
 }
 
+/*
+ * The result arriving.
+ *
+ * Scale and blur together, not a plain fade: the card is a surface turning up,
+ * and a surface that only changes opacity reads as a decal. The scrim comes in
+ * on its own, slightly ahead, so the market is already going quiet by the time
+ * the figure lands.
+ */
+@keyframes dc-summary {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes dc-scrim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dc-summary {
+  animation: dc-summary var(--duration-fast) var(--ease-out-expo) both;
+}
+
+.dc-scrim {
+  animation: dc-scrim var(--duration-medium) var(--ease-out-expo) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dc-bar {
     animation-delay: 0ms !important;
+  }
+  /* Reduced motion keeps the arrival, without the movement. */
+  .dc-summary {
+    animation: dc-scrim var(--duration-quick) both;
   }
 }
 
