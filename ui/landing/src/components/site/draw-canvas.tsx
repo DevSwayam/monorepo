@@ -85,7 +85,21 @@ const TOL = 0.0022;
 /** Under this total travel, the drawing says nothing worth trading. */
 const FLAT = 0.004;
 
-type Pt = { x: number; y: number };
+/**
+ * A point of the drawn line, held as a price at a moment — never as a pixel.
+ *
+ * The scale re-centres on the live price every tick. A line stored in pixels
+ * stays where it was put while the axis slides underneath it, so it drifts off
+ * the prices it was drawn at, and `resample` reads those same pixels back
+ * through the new scale — quietly changing the legs and the money after the
+ * trade is already open. Storing the price means the line moves with the chart
+ * and says the same thing for as long as it is on screen.
+ */
+type Pt = {
+  /** Position across the forecast half, 0 at the split and 1 at the edge. */
+  t: number;
+  price: number;
+};
 type Phase = "live" | "drawing" | "running";
 
 // --- the feed --------------------------------------------------------------
@@ -143,10 +157,16 @@ type Band = { lo: number; hi: number };
  * whole gesture is choosing up or down, so up and down get half the canvas
  * each, whatever the market has been doing.
  */
-function bandFor(candles: Candle[], center: number): Band {
+function bandFor(candles: Candle[], center: number, extra: number[] = []): Band {
   let reach = center * 0.012;
   for (const c of candles) {
     reach = Math.max(reach, Math.abs(c.h - center), Math.abs(c.l - center));
+  }
+  // The drawn line has to stay on screen too. It widens the band rather than
+  // shifting it, so the current price keeps the middle and the reach is still
+  // the same in both directions.
+  for (const p of extra) {
+    reach = Math.max(reach, Math.abs(p - center));
   }
   const pad = reach * 1.2;
   return { lo: center - pad, hi: center + pad };
@@ -183,37 +203,41 @@ type Scale = ReturnType<typeof makeScale>;
 
 // --- reading the drawing ---------------------------------------------------
 
-/** Price of the drawn polyline at an x, flat past either end. */
-function priceAtX(pts: Pt[], x: number, sc: Scale, entry: number) {
+/** Price of the drawn line at a moment, flat past either end. */
+function priceAt(pts: Pt[], t: number, entry: number) {
   if (pts.length === 0) {
     return entry;
   }
-  if (x <= pts[0].x) {
-    return sc.priceAtY(pts[0].y);
+  if (t <= pts[0].t) {
+    return pts[0].price;
   }
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i];
     const b = pts[i + 1];
-    if (x <= b.x) {
-      const k = (x - a.x) / (b.x - a.x || 1);
-      return sc.priceAtY(a.y + (b.y - a.y) * k);
+    if (t <= b.t) {
+      const k = (t - a.t) / (b.t - a.t || 1);
+      return a.price + (b.price - a.price) * k;
     }
   }
-  return sc.priceAtY(pts[pts.length - 1].y);
+  return pts[pts.length - 1].price;
 }
 
-function resample(pts: Pt[], sc: Scale, entry: number) {
+function resample(pts: Pt[], entry: number) {
   const out: number[] = [];
   for (let i = 0; i < SAMPLES; i++) {
-    out.push(
-      priceAtX(pts, SPLIT + (i / (SAMPLES - 1)) * (PLOT_R - SPLIT), sc, entry),
-    );
+    out.push(priceAt(pts, i / (SAMPLES - 1), entry));
   }
   // The line starts where you get in, which is now, at the last close. The
   // drag sets the shape from there; it cannot move the start.
   out[0] = entry;
   return out;
 }
+
+/** Where a drawn point sits on screen, under whatever scale is current. */
+const plot = (pt: Pt, sc: Scale) => ({
+  x: SPLIT + pt.t * (PLOT_R - SPLIT),
+  y: sc.y(pt.price),
+});
 
 /**
  * The drawing, as the orders it stands for.
@@ -398,7 +422,7 @@ export function DrawCanvas({
     if (pts.length < 2) {
       return null;
     }
-    const prices = resample(pts, sc, entry);
+    const prices = resample(pts, entry);
     const legs = legsFrom(prices);
     let travel = 0;
     for (const l of legs) {
@@ -412,7 +436,7 @@ export function DrawCanvas({
       travel: travel / entry,
       flat: legs.length === 0 || travel / entry < FLAT,
     };
-  }, [pts, sc, entry]);
+  }, [pts, entry]);
 
   /** What the drawing is worth against the candles that have arrived. */
   const book = useMemo(
@@ -437,11 +461,14 @@ export function DrawCanvas({
   });
 
   /** Ease the price scale onto the candles, kept centred on the last price. */
-  const rescale = useCallback((f: Candle[], r: Candle[]) => {
-    const all = [...f, ...r];
-    const at = all.at(-1)?.c ?? seedPrice;
-    setBand((b) => easeBand(b, bandFor(all.slice(-HISTORY), at)));
-  }, [seedPrice]);
+  const rescale = useCallback(
+    (f: Candle[], r: Candle[], line: number[] = []) => {
+      const all = [...f, ...r];
+      const at = all.at(-1)?.c ?? seedPrice;
+      setBand((b) => easeBand(b, bandFor(all.slice(-HISTORY), at, line)));
+    },
+    [seedPrice],
+  );
 
   /**
    * The clock.
@@ -468,7 +495,7 @@ export function DrawCanvas({
           nextCandle(fd.at(-1)?.c ?? seedPrice, vol),
         ];
         setFeed(nextFeed);
-        rescale(nextFeed, []);
+        rescale(nextFeed, [], sh ? sh.prices : []);
         return;
       }
 
@@ -484,7 +511,7 @@ export function DrawCanvas({
       const bar = nextCandle(open, vol, along, follow.current);
       const next = [...rn, bar];
       setRun(next);
-      rescale(fd, next);
+      rescale(fd, next, sh.prices);
 
       // The drawing sets no stop and no target, so only two things end a
       // trade: the venue liquidating a leg, or the bars running out.
@@ -545,16 +572,23 @@ export function DrawCanvas({
    * commits, and anything that has to consult rendered state mid-gesture will
    * sooner or later consult a stale copy of it.
    */
-  const push = useCallback((p: Pt) => {
-    const x = Math.min(PLOT_R, Math.max(SPLIT, p.x));
-    const yy = Math.min(PLOT_B, Math.max(PLOT_T, p.y));
-    if (x - lastX.current < 5) {
-      return;
-    }
-    lastX.current = x;
-    kept.current += 1;
-    setPts((prev) => [...prev, { x, y: yy }]);
-  }, []);
+  const push = useCallback(
+    (raw: { x: number; y: number }, sc: Scale) => {
+      const x = Math.min(PLOT_R, Math.max(SPLIT, raw.x));
+      const y = Math.min(PLOT_B, Math.max(PLOT_T, raw.y));
+      if (x - lastX.current < 5) {
+        return;
+      }
+      lastX.current = x;
+      kept.current += 1;
+      // Converted here, once, while this scale is the one the hand can see.
+      setPts((prev) => [
+        ...prev,
+        { t: (x - SPLIT) / (PLOT_R - SPLIT), price: sc.priceAtY(y) },
+      ]);
+    },
+    [],
+  );
 
   const onDown = (e: ReactPointerEvent) => {
     const p = toLocal(e);
@@ -573,8 +607,8 @@ export function DrawCanvas({
     setNote(null);
     follow.current = -0.12 + Math.random() * 0.62;
     setPhase("drawing");
-    setPts([{ x: SPLIT, y: sc.y(at) }]);
-    push(p);
+    setPts([{ t: 0, price: at }]);
+    push(p, sc);
   };
 
   const onMove = (e: ReactPointerEvent) => {
@@ -583,7 +617,7 @@ export function DrawCanvas({
     }
     const p = toLocal(e);
     if (p) {
-      push(p);
+      push(p, sc);
     }
   };
 
@@ -627,6 +661,9 @@ export function DrawCanvas({
         : note
           ? ({ kind: "note" as const, note })
           : null;
+
+  /** The line in screen space. Follows the scale, so it tracks the candles. */
+  const drawn = useMemo(() => pts.map((pt) => plot(pt, sc)), [pts, sc]);
 
   const drawing = phase === "drawing";
   const hasLine = phase !== "live" && shape;
@@ -727,11 +764,11 @@ export function DrawCanvas({
             y={sc.y}
           />
 
-          {/* the line */}
-          {pts.length > 1 ? (
+          {/* the line, projected through whatever scale is current */}
+          {drawn.length > 1 ? (
             <g>
               <path
-                d={smoothPath(pts)}
+                d={smoothPath(drawn)}
                 fill="none"
                 stroke="var(--brand)"
                 strokeLinecap="round"
@@ -741,15 +778,15 @@ export function DrawCanvas({
               {drawing ? null : (
                 <g>
                   <circle
-                    cx={pts[pts.length - 1].x}
-                    cy={pts[pts.length - 1].y}
+                    cx={drawn[drawn.length - 1].x}
+                    cy={drawn[drawn.length - 1].y}
                     fill="var(--brand)"
                     filter="url(#dc-head)"
                     r="7"
                   />
                   <circle
-                    cx={pts[pts.length - 1].x}
-                    cy={pts[pts.length - 1].y}
+                    cx={drawn[drawn.length - 1].x}
+                    cy={drawn[drawn.length - 1].y}
                     fill="#fff"
                     r="3.4"
                   />
