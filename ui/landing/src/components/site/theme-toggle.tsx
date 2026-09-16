@@ -44,6 +44,7 @@ export function ThemeToggle() {
     const root = document.documentElement;
     const next = root.classList.contains("dark") ? "light" : "dark";
     root.classList.toggle("dark", next === "dark");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", next === "dark" ? "#121110" : "#ffffff");
     try {
       localStorage.setItem(KEY, next);
     } catch {

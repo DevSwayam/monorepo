@@ -1,53 +1,123 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import heroLeft from "../../../public/assets/illo/hero-left.png";
+import heroLeftDark from "../../../public/assets/illo/hero-left-dark.png";
+import heroRightDark from "../../../public/assets/illo/hero-right-dark.png";
+import heroRight from "../../../public/assets/illo/hero-right.png";
+import cta from "../../../public/assets/illo/cta-scene.png";
+import band from "../../../public/assets/illo/band-cast.png";
+import steps from "../../../public/assets/illo/spot-steps.png";
+import example from "../../../public/assets/illo/spot-example.png";
+import redraw from "../../../public/assets/illo/spot-redraw.png";
+import faq from "../../../public/assets/illo/spot-faq.png";
+import sceneSteps from "../../../public/assets/illo/scene-steps.png";
+import sceneExample from "../../../public/assets/illo/scene-example.png";
+import sceneRedraw from "../../../public/assets/illo/scene-redraw.png";
+import sceneFaq from "../../../public/assets/illo/scene-faq.png";
+import sceneStepsDark from "../../../public/assets/illo/scene-steps-dark.png";
+import sceneExampleDark from "../../../public/assets/illo/scene-example-dark.png";
+import sceneRedrawDark from "../../../public/assets/illo/scene-redraw-dark.png";
+import sceneFaqDark from "../../../public/assets/illo/scene-faq-dark.png";
+import { IllustrationPalette } from "./illustration-palette";
+import styles from "./illo.module.css";
 
 /*
  * The illustration layer.
  *
- * Four flat-vector scenes of the skech cast: the pen, the drawn line as a
- * creature, and a green and a red candle. All decorative, all aria-hidden, none
- * of them load-bearing: the page said everything it needs to say before these
- * arrived and it still does with images off.
- *
- * They are drawn on paper. On the dark theme the cream and sand shapes are the
- * brightest thing on the page and the black limbs disappear into the ground, so
- * the whole layer is dimmed there rather than pretending it works.
+ * Static imports give changed artwork a new content-hashed URL, including in
+ * Next's image cache. Dark mode remaps the neutral inks through the shared SVG
+ * filter while keeping the blue, yellow, green and red fills at full opacity.
+ * These small palette PNGs bypass lossy optimisation, which otherwise adds
+ * colour noise and fringes that become visible when the neutrals are remapped.
  */
 const SLOTS = {
-  heroLeft: { src: "/assets/illo/hero-left.png", w: 760, h: 581 },
-  heroRight: { src: "/assets/illo/hero-right.png", w: 760, h: 581 },
-  heroMobile: { src: "/assets/illo/hero-mobile.png", w: 720, h: 292 },
-  cta: { src: "/assets/illo/cta-scene.png", w: 900, h: 514 },
-  band: { src: "/assets/illo/band-cast.png", w: 1000, h: 750 },
+  heroLeft,
+  heroRight,
+  cta,
+  band,
+  steps,
+  example,
+  redraw,
+  faq,
 } as const;
+
+const SECTION_SCENES = {
+  steps: { light: sceneSteps, dark: sceneStepsDark },
+  example: { light: sceneExample, dark: sceneExampleDark },
+  redraw: { light: sceneRedraw, dark: sceneRedrawDark },
+  faq: { light: sceneFaq, dark: sceneFaqDark },
+} as const;
+
+export function SectionScene({
+  name,
+  className,
+}: {
+  name: keyof typeof SECTION_SCENES;
+  className?: string;
+}) {
+  return (
+    <span aria-hidden="true" className={cn(styles.sectionScene, className)}>
+      {/* Recolour before browser scaling, so ink edges stay smooth at any size. */}
+      <Image
+        alt=""
+        className={cn(styles.sectionArtwork, styles.sectionLight)}
+        src={SECTION_SCENES[name].light}
+        unoptimized
+      />
+      <Image
+        alt=""
+        className={cn(styles.sectionArtwork, styles.sectionDark)}
+        src={SECTION_SCENES[name].dark}
+        unoptimized
+      />
+    </span>
+  );
+}
+
+/**
+ * One character above a section heading.
+ *
+ * Small on purpose. These sit over a heading that is already doing the work, so
+ * they are a mark rather than a scene, with a 112px slot and generous padding
+ * already included in each asset.
+ */
+export function Spot({
+  name,
+  className,
+}: {
+  name: "steps" | "example" | "redraw" | "faq";
+  className?: string;
+}) {
+  const s = SLOTS[name];
+  return (
+    <Image
+      alt=""
+      aria-hidden="true"
+      className={cn(
+        styles.image,
+        "pointer-events-none mx-auto size-28 select-none",
+        className,
+      )}
+      sizes="112px"
+      src={s}
+      unoptimized
+    />
+  );
+}
 
 /**
  * The hero flanks, running off both edges behind the headline.
  *
  * Each is weighted away from the centre and nearly empty on its inner third,
- * which is the side the headline sits on. Below md they are dropped for a
- * single strip: at phone width there is no room either side of the type, and
- * scaling them down turns two characters into two smudges.
+ * which is the side the headline sits on. On phones the same art forms a
+ * separate row below the copy, so the characters stay large enough to read.
  */
 export function HeroScene() {
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none select-none dark:opacity-55"
-    >
+    <div aria-hidden="true" className={styles.scene}>
+      <IllustrationPalette />
       <Flank slot="heroLeft" side="left" />
       <Flank slot="heroRight" side="right" />
-
-      <div className="flex justify-center pt-6 md:hidden">
-        <Image
-          alt=""
-          className="h-8 w-auto"
-          height={SLOTS.heroMobile.h}
-          priority
-          src={SLOTS.heroMobile.src}
-          width={SLOTS.heroMobile.w}
-        />
-      </div>
     </div>
   );
 }
@@ -60,22 +130,15 @@ function Flank({
   side: "left" | "right";
 }) {
   const s = SLOTS[slot];
+  const dark = side === "left" ? heroLeftDark : heroRightDark;
   return (
-    <div
-      className={cn(
-        "absolute inset-y-0 hidden w-[30%] max-w-[380px] items-center md:flex",
-        side === "left" ? "left-0 justify-start" : "right-0 justify-end",
-      )}
-    >
-      <Image
-        alt=""
-        className="max-h-full w-full object-contain"
-        height={s.h}
-        priority
-        src={s.src}
-        width={s.w}
-      />
-    </div>
+    <span className={cn(styles.flank, side === "left" ? styles.left : styles.right)}>
+      <Image alt="" className={cn(styles.sectionArtwork, styles.sectionLight)} fetchPriority="high" loading="eager" src={s} unoptimized />
+      <Image alt="" className={cn(styles.sectionArtwork, styles.sectionDark)} fetchPriority="high" loading="eager" src={dark} unoptimized />
+      <span className={cn(styles.accent, styles.accentSquare)} />
+      <span className={cn(styles.accent, styles.accentDot)} />
+      <span className={cn(styles.accent, styles.accentDash)} />
+    </span>
   );
 }
 
@@ -92,10 +155,14 @@ export function BandScene({ className }: { className?: string }) {
       <Image
         alt=""
         aria-hidden="true"
-        className="pointer-events-none mx-auto h-auto w-full max-w-[34rem] select-none dark:opacity-55"
-        height={SLOTS.band.h}
-        src={SLOTS.band.src}
-        width={SLOTS.band.w}
+        className={cn(
+          styles.image,
+          styles.legacyImage,
+          "pointer-events-none mx-auto h-auto w-full max-w-[34rem] select-none",
+        )}
+        sizes="(max-width: 576px) 90vw, 544px"
+        src={SLOTS.band}
+        unoptimized
       />
     </div>
   );
@@ -107,10 +174,15 @@ export function CtaScene({ className }: { className?: string }) {
     <Image
       alt=""
       aria-hidden="true"
-      className={cn("pointer-events-none select-none dark:opacity-55", className)}
-      height={SLOTS.cta.h}
-      src={SLOTS.cta.src}
-      width={SLOTS.cta.w}
+      className={cn(
+        styles.image,
+        styles.legacyImage,
+        "pointer-events-none select-none",
+        className,
+      )}
+      sizes="(max-width: 448px) 85vw, 384px"
+      src={SLOTS.cta}
+      unoptimized
     />
   );
 }

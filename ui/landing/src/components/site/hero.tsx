@@ -1,69 +1,79 @@
+import { ArrowDownIcon, PenLineIcon } from "lucide-react";
 import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
+import { Expandable } from "./expandable";
 import { GradientCard } from "./gradient-card";
 import { HeadlineMix } from "./headline-mix";
+import styles from "./hero.module.css";
 import { HeroScene } from "./illo";
 import { Reveal } from "./motion";
+import { Body, Heading } from "./type";
 
-/**
- * §2, the claim, then the thing itself: except the thing is now usable.
- *
- * The page used to carry a picture of the product here, and a picture cannot
- * teach a gesture. Everything below the fold was doing the work of explaining
- * what a drawn line means; one drawable chart does it in a second and a half,
- * to someone who has never traded, without a word of vocabulary. See
- * ui/landing/CONTENT.md §5.1.
- *
- * There is no call to action above the canvas. The canvas is the call to
- * action: a button pointing at a drawable chart one scroll below it is a sign
- * saying "sign" next to a pen.
- */
+/** A full-width illustrated introduction, followed by the live practice chart. */
 export async function Hero() {
   const market = await getBtcMarket();
 
   return (
-    <section className="scroll-mt-24" id="top">
-      {/* The scene is scoped to the headline band, not the whole section. Given
-          the run of it the flanks would sit behind the canvas too, and artwork
-          behind a surface you are meant to draw on is just noise. The wrapper
-          is full width so they can bleed off the page rather than stopping at
-          the column edge. */}
-      <div className="relative overflow-hidden">
+    <>
+      <section aria-labelledby="hero-title" className={styles.stage} id="top">
         <HeroScene />
 
-        <div className="container-x relative px-4 pt-6 pb-10 sm:px-6 md:pt-10 md:pb-14 lg:px-8">
-          <div className="flex flex-col items-center text-center">
-            <Reveal index={1}>
-              <HeadlineMix className="mt-2" />
-            </Reveal>
+        <div className={styles.content}>
+          <Reveal index={1}>
+            <HeadlineMix />
+          </Reveal>
 
-            <Reveal className="contents" index={3}>
-              <p className="measure mt-7 text-balance text-body text-fg-muted md:text-lg">
-                Think it goes up? Draw it going up.{" "}
-                <span className="text-foreground">
-                  That&rsquo;s the whole thing.
-                </span>
-              </p>
-            </Reveal>
-          </div>
-        </div>
-      </div>
+          <Reveal index={2}>
+            <Body className="mx-auto mt-6 max-w-[25rem] text-balance md:text-lg">
+              Think it goes up? Draw it going up.
+              <span className="block">That&rsquo;s the whole thing.</span>
+            </Body>
+          </Reveal>
 
-      {/* The product, live. Real BTC candles, the real gesture; nothing is at
-          stake and no wallet is connected. */}
-      <div className="container-x px-4 pb-12 sm:px-6 md:pb-20 lg:px-8">
-        <Reveal index={4}>
-          <GradientCard className="scroll-mt-28" id="try">
-            <div className="cult-card overflow-hidden rounded-3xl">
-              <DrawCanvas
-                candles={market.candles}
-                live={market.live}
-                price={market.price}
-              />
+          <Reveal index={3}>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <a
+                className="pressable inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-primary px-6 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
+                href="#try"
+              >
+                <PenLineIcon aria-hidden="true" className="size-4" />
+                Try drawing
+              </a>
+              <a
+                className="pressable inline-flex min-h-12 items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
+                href="#start"
+              >
+                Join waitlist
+                <ArrowDownIcon aria-hidden="true" className="size-4" />
+              </a>
             </div>
-          </GradientCard>
+          </Reveal>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="try-title"
+        className={styles.practice}
+        id="try"
+      >
+        <Reveal className={styles.practiceHeading}>
+          <Heading id="try-title">Your turn. Draw a trade.</Heading>
+          <Body>A practice chart. No wallet needed.</Body>
         </Reveal>
-      </div>
-    </section>
+        <Reveal index={1}>
+          <Expandable label="the chart">
+            <GradientCard>
+              <div className="cult-card overflow-hidden rounded-3xl">
+                <DrawCanvas
+                  candles={market.candles}
+                  live={market.live}
+                  price={market.price}
+                />
+              </div>
+            </GradientCard>
+          </Expandable>
+        </Reveal>
+      </section>
+    </>
   );
 }

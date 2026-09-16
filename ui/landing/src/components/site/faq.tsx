@@ -5,7 +5,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Reveal } from "./motion";
-import { Panel, Section, SectionHead } from "./ui";
+import { SectionScene } from "./illo";
+import styles from "./story.module.css";
 
 const FAQS = [
   {
@@ -30,38 +31,29 @@ const FAQS = [
   },
 ] as const;
 
-/**
- * §8, real questions a trader would actually ask, answered plainly. Placeholder
- * FAQs are transparent; these are the objections the product has to survive.
- *
- * Each question is its own small surface rather than a row in a bordered list,
- * so opening one reads as that card growing rather than as a table reflowing.
- * The panel's height transition comes from the primitive; what matters here is
- * that the closed state has somewhere to grow *from*.
- */
+/** The first answer is open so the questions read as part of the page. */
 export function Faq() {
   return (
-    <Section className="max-w-4xl" id="faq">
-      <SectionHead id="faq-title">
-        Questions, answered.
-      </SectionHead>
+    <section aria-labelledby="faq-title" className={styles.faq} id="faq">
+      <Reveal>
+        <h2 className={styles.title} id="faq-title">
+          Questions, answered.
+        </h2>
+        <SectionScene className={styles.faqArt} name="faq" />
+      </Reveal>
 
-      <Accordion className="flex w-full flex-col gap-3">
-        {FAQS.map((item, i) => (
-          <Reveal index={i} key={item.q}>
-            <AccordionItem className="border-b-0">
-              <Panel className="rounded-xl px-5 md:px-7">
-                <AccordionTrigger className="py-5 text-left text-body text-foreground data-panel-open:text-foreground">
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionPanel className="measure pt-0 pb-6 text-fg-muted text-sm leading-[1.75]">
-                  {item.a}
-                </AccordionPanel>
-              </Panel>
+      <Accordion className={styles.questions} defaultValue={[FAQS[0].q]}>
+        {FAQS.map((item) => (
+            <AccordionItem className={styles.question} key={item.q} value={item.q}>
+              <AccordionTrigger className="py-5 text-left text-body text-foreground data-panel-open:text-foreground">
+                {item.q}
+              </AccordionTrigger>
+              <AccordionPanel className="measure pt-0 pb-6 text-fg-muted text-sm leading-[1.75]">
+                {item.a}
+              </AccordionPanel>
             </AccordionItem>
-          </Reveal>
         ))}
       </Accordion>
-    </Section>
+    </section>
   );
 }

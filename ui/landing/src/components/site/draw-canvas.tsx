@@ -1,5 +1,7 @@
 "use client";
 
+import { CandlePnl } from "./candle-pnl";
+import { ExpandButton } from "./expandable";
 import { Candles, spacing } from "./chart";
 import { SoonButton } from "./soon";
 import { Kicker } from "./type";
@@ -391,6 +393,41 @@ function BitcoinMark() {
   );
 }
 
+/**
+ * The price, on the right edge of the line it belongs to.
+ *
+ * Clamped inside the plot so it cannot ride off the top or bottom when the
+ * band moves: the line itself can sit anywhere, but a label half outside the
+ * card reads as a rendering fault.
+ */
+function PriceTag({ price, y }: { price: number; y: number }) {
+  const x = PLOT_R + 6;
+  const w = W - x - 4;
+  const top = Math.min(PLOT_B - 20, Math.max(PLOT_T + 2, y - 9));
+  return (
+    <g>
+      <rect
+        fill="var(--surface-2)"
+        height="18"
+        rx="5"
+        width={w}
+        x={x}
+        y={top}
+      />
+      <text
+        fill="var(--fg-muted)"
+        fontSize="10.5"
+        style={{ fontFamily: "var(--font-mono)" }}
+        textAnchor="middle"
+        x={x + w / 2}
+        y={top + 12.5}
+      >
+        {fmtUsd(price)}
+      </text>
+    </g>
+  );
+}
+
 export function DrawCanvas({
   candles: seed,
   price: seedPrice,
@@ -469,9 +506,10 @@ export function DrawCanvas({
     };
   }, [pts, entry]);
 
-  /** What the drawing is worth against the candles that have arrived. */
-  const book = useMemo(
-    () => (shape ? settle(run, shape.legs, shape.span) : null),
+  // Each prefix uses the same accounting as settlement, including fees and
+  // direction changes. Closed bars stay fixed; only the forming bar updates.
+  const candlePnls = useMemo(
+    () => shape ? run.map((_, index) => settle(run.slice(0, index + 1), shape.legs, shape.span).net) : [],
     [run, shape],
   );
 
@@ -682,24 +720,6 @@ export function DrawCanvas({
     setPhase("running");
   };
 
-  /**
-   * What the card shows: a live trade, the last result, or nothing at all.
-   *
-   * A result outlives its trade on purpose, the run has already been folded
-   * into history by the time it is set, and a number that vanished the instant
-   * it resolved would be a number nobody read.
-   */
-  const stats =
-    shape && phase === "running"
-      ? ({
-          kind: "open" as const,
-          now: book?.net ?? 0,
-          side: book?.pos ? (book.pos.d > 0 ? "long" : "short") : "flat",
-        })
-      : note
-          ? ({ kind: "note" as const, note })
-          : null;
-
   /** The line in screen space. Follows the scale, so it tracks the candles. */
   const drawn = useMemo(() => pts.map((pt) => plot(pt, sc)), [pts, sc]);
 
@@ -709,7 +729,7 @@ export function DrawCanvas({
 
   return (
     <div className={cn("flex flex-col gap-3 p-3 md:gap-4 md:p-4", className)}>
-      <div className="flex items-center justify-between px-2 pt-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-2 pt-1">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center gap-1.5 rounded-full bg-surface-3 py-1 pr-3 pl-1.5 font-medium text-foreground text-sm">
             <BitcoinMark />
@@ -728,10 +748,11 @@ export function DrawCanvas({
               pulsing green dot that used to sit next to it, which is the
               universal "live feed" tell and was claiming the opposite. */}
           <span className="text-fg-subtle text-xs">practice</span>
+          <ExpandButton />
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl bg-background/60 shadow-[inset_0_0_0_1px_var(--edge)]">
+      <div data-practice-plot="" className="relative overflow-hidden rounded-xl bg-background/60 shadow-[inset_0_0_0_1px_var(--edge)]">
         <svg
           aria-label="A moving Bitcoin-style price chart you can draw on. Drag across the empty right-hand side to draw where you think the price is going."
           className={cn(
@@ -784,6 +805,15 @@ export function DrawCanvas({
             y1={sc.y(hasLine ? entry : price)}
             y2={sc.y(hasLine ? entry : price)}
           />
+
+          {/*
+            The number that line stands for, parked in the gutter at the right.
+            A rule across a chart with no figure on it makes you go and find the
+            price in the header and hold both in your head; putting it on the
+            end of the rule is how every trading screen does it, and it costs
+            the 70px the plot already leaves free.
+          */}
+          <PriceTag price={hasLine ? entry : price} y={sc.y(hasLine ? entry : price)} />
 
           {/* history */}
           <Candles
@@ -895,48 +925,13 @@ export function DrawCanvas({
           ) : null}
         </svg>
 
-        {/*
-          The numbers, on the chart rather than under it.
-          
-          A panel below the canvas meant the figure you are watching and the
-          candles that move it were never in one glance. Up here they are, and
-          the card gets out of the way when there is nothing to say.
-          
-          `pointer-events-none` throughout: this sits over the top-right of the
-          drawing surface, and it must never eat a drag that starts under it.
-        */}
-        {stats ? (
-          <div
-            aria-live="polite"
-            className="glass pointer-events-none absolute top-3 right-3 min-w-[9.5rem] rounded-xl px-3.5 py-3"
-          >
-            {stats.kind === "note" ? (
-              <span className="text-fg-muted text-xs">{stats.note}</span>
-            ) : stats.kind === "open" ? (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-baseline justify-between gap-5">
-                  <span className="text-fg-subtle text-xs">Right now</span>
-                  <span
-                    className={cn(
-                      "figures text-base",
-                      stats.now >= 0
-                        ? "text-[var(--up)]"
-                        : "text-[var(--down)]",
-                    )}
-                  >
-                    {stats.now >= 0 ? "+" : "−"}${fmtUsd(Math.abs(stats.now))}
-                  </span>
-                </div>
-                {/* Which order the drawing has open right now. */}
-                <span className="text-fg-subtle text-[0.6875rem]">
-                  {stats.side === "flat"
-                    ? "between legs"
-                    : `${stats.side} · $${NOTIONAL} of BTC`}
-                </span>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+        {phase === "running" && run.length > 0 && <CandlePnl candles={run.map((bar, index) => ({
+          x: (SPLIT + (index + 0.5) * runWidth) / W * 100,
+          y: sc.y(bar.h) / H * 100,
+          bottom: sc.y(bar.l) / H * 100,
+          pnl: candlePnls[index],
+        }))} />}
+        {note && <div role="status" className="pointer-events-none absolute top-3 right-3 rounded-xl border border-edge bg-surface-2 px-3 py-2 text-fg-muted text-xs">{note}</div>}
 
         {/*
           The end of the trade, held up rather than swept away.

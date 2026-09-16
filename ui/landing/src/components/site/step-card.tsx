@@ -48,28 +48,43 @@ const SLIDE = "84cqw";
  * the note in scenario-panel.tsx, where three live charts would otherwise
  * re-render on every frame of one animating chart.
  *
- * Advancing is still the caller's business. One of them runs a plain interval,
- * the other a frame clock tied to a chart, and pushing either into here would
- * mean a timer that has to know about both.
+ * Advancing is the caller's business. Both walkthroughs now hand it a
+ * fractional `active` driven by scroll (see ScrollStepper), but the component
+ * does not care where the number came from.
+ *
+ * `active` may be fractional. The track is translated by the raw value so it
+ * can sit between two slides while a scroll is in progress; everything that has
+ * to pick one slide, the dots and the scale and `inert`, rounds it. Passing a
+ * whole number behaves exactly as before.
  */
 export function StepCard({
   slides,
   active,
   onSelect,
   label,
+  tracking,
   bodyClass,
   action,
 }: {
   slides: readonly Slide[];
+  /** May be fractional while a scroll is mid-transition. */
   active: number;
   onSelect: (index: number) => void;
+  /**
+   * The position is being driven directly, so the track must not also ease
+   * toward it: two easings on one value is what makes a scroll-linked carousel
+   * feel like it is lagging behind the wheel.
+   */
+  tracking?: boolean;
   /** Names the set of dots, e.g. "Steps" or "Scenarios". */
   label: string;
   /** Height of the visual area. Fixed, so slides cannot resize the card. */
   bodyClass?: string;
-  /** Sits beside the dots. Both walkthroughs put their pause control here. */
+  /** Sits beside the dots. */
   action?: ReactNode;
 }) {
+  const index = Math.round(active);
+
   return (
     <div>
       {/*
@@ -81,13 +96,18 @@ export function StepCard({
       */}
       <div className="overflow-hidden py-4 [container-type:inline-size]">
         <div
-          className="flex transition-transform duration-slow ease-out-expo motion-reduce:transition-none"
+          className={cn(
+            "flex",
+            tracking
+              ? null
+              : "transition-transform duration-slow ease-out-expo motion-reduce:transition-none",
+          )}
           style={{
             transform: `translateX(calc((100cqw - ${SLIDE}) / 2 - ${active} * ${SLIDE}))`,
           }}
         >
           {slides.map((slide, i) => {
-            const current = i === active;
+            const current = i === index;
             return (
               <div
                 className="relative shrink-0 px-1.5 md:px-2.5"
@@ -214,7 +234,7 @@ export function StepCard({
           role="tablist"
         >
           {slides.map((slide, i) => {
-            const current = i === active;
+            const current = i === index;
             return (
               <button
                 aria-label={slide.label}

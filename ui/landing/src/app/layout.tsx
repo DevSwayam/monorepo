@@ -78,17 +78,14 @@ export const metadata: Metadata = {
     creator: X_HANDLE,
   },
   // og:image, its dimensions and alt text are filled in by Next from
-  // src/app/opengraph-image.tsx, which renders the card rather than serving a
-  // static file, so it never drifts from the brand. The icon comes from
-  // src/app/icon.png the same way.
+  // src/app/opengraph-image.tsx, which serves the finished illustrated card.
+  // Next also uses this card for Twitter when no separate twitter-image exists.
+  // The icon comes from src/app/icon.png the same way.
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#121110" },
-  ],
-  colorScheme: "light dark",
+  themeColor: "#ffffff",
+  colorScheme: "light",
 };
 
 /*
@@ -99,7 +96,8 @@ export const viewport: Viewport = {
  * Falls back to the system setting when nothing has been chosen, which is why
  * it cannot simply be rendered server-side: neither value exists there.
  */
-const THEME_BOOT = `(function(){try{var t=localStorage.getItem("theme");var d=t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.classList.toggle("dark",d)}catch(e){}})()`;
+// Dark mode temporarily disabled; retain the boot script for later.
+// const THEME_BOOT = `(function(){try{var t=localStorage.getItem("theme");var d=t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.classList.toggle("dark",d);var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d?"#121110":"#ffffff"}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -114,7 +112,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: must run before paint */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+        {/* <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} /> */}
       </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         <ToastProvider position="bottom-right">{children}</ToastProvider>

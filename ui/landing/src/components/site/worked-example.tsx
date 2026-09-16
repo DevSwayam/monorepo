@@ -1,28 +1,21 @@
 import { ScenarioPanel } from "./scenario-panel";
-import { Reveal } from "./motion";
-import { Section, SectionHead } from "./ui";
+import { SectionScene } from "./illo";
+import story from "./story.module.css";
+import styles from "./worked-example.module.css";
 
-/**
- * §6, one line, three endings, played rather than described.
- *
- * The static version showed two lines on a chart and said what each was worth.
- * It was accurate and nobody learned anything from it, because the thing a new
- * trader has to feel is that the number moves while they sit there. So the
- * chart runs.
- */
 export function WorkedExample() {
   return (
-    <Section id="worked-example">
-      <SectionHead
-        id="worked-example-title"
-        lead="The line stays put. Only the price moves, and here are three ways that can go."
-      >
-        Say you draw this one on BTC.
-      </SectionHead>
-
-      <Reveal>
+    <section aria-labelledby="worked-example-title" className={story.chapter} data-story-section="" id="worked-example">
+      <div className={styles.card} data-story-card="">
+        <div className={styles.heading}>
+          <div>
+            <h2 id="worked-example-title">Say you draw this one on Bitcoin.</h2>
+            <p>You draw the path. Watch the price take its own.</p>
+          </div>
+          <SectionScene name="example" className={styles.art} />
+        </div>
         <ScenarioPanel />
-      </Reveal>
-    </Section>
+      </div>
+    </section>
   );
 }

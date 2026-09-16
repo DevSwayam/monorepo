@@ -1,12 +1,13 @@
 import { Cta } from "@/components/site/cta";
+import { Features } from "@/components/site/features";
 import { Faq } from "@/components/site/faq";
 import { SiteFooter } from "@/components/site/footer";
 import { Hero } from "@/components/site/hero";
-import { BandScene } from "@/components/site/illo";
 import { HowItWorks } from "@/components/site/how-it-works";
 import { Redraw } from "@/components/site/redraw";
 import { WorkedExample } from "@/components/site/worked-example";
 import { SiteNav } from "@/components/site/nav";
+import { StoryStack } from "@/components/site/story-stack";
 
 /**
  * Rendered per request rather than at build time, so the headline picks a new
@@ -27,12 +28,12 @@ export default function HomePage() {
       <SiteNav />
       <main id="main">
         <Hero />
-        <HowItWorks />
-        <WorkedExample />
-        <Redraw />
-        {/* A breath between the last walkthrough and the questions, which was
-            the longest unbroken run of dark panels on the page. */}
-        <BandScene className="pt-4 pb-2 md:pt-8" />
+        <StoryStack>
+          <HowItWorks />
+          <WorkedExample />
+          <Redraw />
+        </StoryStack>
+        <Features />
         <Faq />
         <Cta />
       </main>

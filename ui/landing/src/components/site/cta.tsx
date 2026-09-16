@@ -1,9 +1,8 @@
-import { GradientCard } from "./gradient-card";
 import { CtaScene } from "./illo";
 import { Reveal } from "./motion";
 import { WaitlistForm } from "./waitlist";
 import { Display } from "./type";
-import { Section } from "./ui";
+import styles from "./story.module.css";
 
 /**
  * The close, and the only thing the page asks for: an email.
@@ -19,20 +18,16 @@ import { Section } from "./ui";
  */
 export function Cta() {
   return (
-    <Section id="start">
-      <Reveal>
-        <GradientCard glow="always">
-          <div className="surface flex flex-col items-center overflow-hidden rounded-3xl px-6 py-16 text-center md:px-12 md:py-20">
-            <Display as="h2" className="max-w-[16ch]" id="cta-title">
-              Be first to draw.
-            </Display>
-            <WaitlistForm className="mt-8 w-full max-w-md" />
-            {/* Under the form, not beside it: the field is the one thing being
-                asked for and nothing should sit level with it. */}
-            <CtaScene className="-mb-4 mt-8 h-auto w-full max-w-[24rem]" />
-          </div>
-        </GradientCard>
+    <section aria-labelledby="cta-title" className={styles.cta} id="start">
+      <Reveal className={styles.ctaCard}>
+        <div>
+          <Display as="h2" className="max-w-[11ch]" id="cta-title">
+            Be first to draw.
+          </Display>
+          <WaitlistForm className="mt-8 w-full max-w-md" />
+        </div>
+        <CtaScene className={styles.ctaArt} />
       </Reveal>
-    </Section>
+    </section>
   );
 }

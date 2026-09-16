@@ -1,5 +1,6 @@
 import { LogoLink } from "./logo";
-import { ThemeToggle } from "./theme-toggle";
+// Dark mode temporarily disabled.
+// import { ThemeToggle } from "./theme-toggle";
 
 /**
  * A plain topbar that scrolls away, like family.co's.
@@ -15,7 +16,7 @@ export function SiteNav() {
         <LogoLink />
 
         <div className="flex items-center gap-1.5">
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
 
           {/* An anchor, not a button with a toast behind it: the thing it
               promises is on this page. */}
