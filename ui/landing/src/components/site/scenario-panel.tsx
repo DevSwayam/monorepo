@@ -14,7 +14,7 @@ import {
   type Scenario,
 } from "./market-data";
 import { markAt, ScenarioChart } from "./scenario-chart";
-import { StepCard } from "./step-card";
+import { PauseButton, StepCard } from "./step-card";
 
 /** One scenario plays over this long, then holds so the ending can be read. */
 const RUN_MS = 4400;
@@ -124,28 +124,11 @@ export function ScenarioPanel() {
       <StepCard
         action={
           reduced ? null : (
-            <button
-              aria-label={paused ? "Play the walkthrough" : "Pause the walkthrough"}
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/8 text-fg-subtle transition-colors duration-fast ease-smooth-out hover:bg-white/14 hover:text-foreground"
-              onClick={() => setPaused((v) => !v)}
-              type="button"
-            >
-              <svg
-                aria-hidden="true"
-                className="size-2.5"
-                fill="currentColor"
-                viewBox="0 0 12 12"
-              >
-                {paused ? (
-                  <path d="M2 0 L12 6 L2 12 Z" />
-                ) : (
-                  <>
-                    <rect height="12" width="3.5" x="1" y="0" />
-                    <rect height="12" width="3.5" x="7.5" y="0" />
-                  </>
-                )}
-              </svg>
-            </button>
+            <PauseButton
+              onToggle={() => setPaused((v) => !v)}
+              paused={paused}
+              subject="the walkthrough"
+            />
           )
         }
         active={active}
