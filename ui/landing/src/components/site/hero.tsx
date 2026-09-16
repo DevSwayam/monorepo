@@ -2,9 +2,8 @@ import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
 import { GradientCard } from "./gradient-card";
 import { HeadlineMix } from "./headline-mix";
+import { HeroScene } from "./illo";
 import { Reveal } from "./motion";
-import { Body } from "./type";
-import { Section } from "./ui";
 
 /**
  * §2, the claim, then the thing itself: except the thing is now usable.
@@ -23,33 +22,48 @@ export async function Hero() {
   const market = await getBtcMarket();
 
   return (
-    <Section className="pt-6 pb-10 md:pt-10 md:pb-14" id="top">
-      <div className="flex flex-col items-center text-center">
-        <Reveal index={1}>
-          <HeadlineMix className="mt-2" />
-        </Reveal>
+    <section className="scroll-mt-24" id="top">
+      {/* The scene is scoped to the headline band, not the whole section. Given
+          the run of it the flanks would sit behind the canvas too, and artwork
+          behind a surface you are meant to draw on is just noise. The wrapper
+          is full width so they can bleed off the page rather than stopping at
+          the column edge. */}
+      <div className="relative overflow-hidden">
+        <HeroScene />
 
-        <Reveal className="contents" index={3}>
-          <Body className="measure mt-7 text-balance md:text-lg">
-            Think it goes up? Draw it going up.{" "}
-            <span className="text-foreground">That&rsquo;s the whole thing.</span>
-          </Body>
-        </Reveal>
+        <div className="container-x relative px-4 pt-6 pb-10 sm:px-6 md:pt-10 md:pb-14 lg:px-8">
+          <div className="flex flex-col items-center text-center">
+            <Reveal index={1}>
+              <HeadlineMix className="mt-2" />
+            </Reveal>
+
+            <Reveal className="contents" index={3}>
+              <p className="measure mt-7 text-balance text-body text-fg-muted md:text-lg">
+                Think it goes up? Draw it going up.{" "}
+                <span className="text-foreground">
+                  That&rsquo;s the whole thing.
+                </span>
+              </p>
+            </Reveal>
+          </div>
+        </div>
       </div>
 
       {/* The product, live. Real BTC candles, the real gesture; nothing is at
           stake and no wallet is connected. */}
-      <Reveal className="mt-14 md:mt-20" index={4}>
-        <GradientCard className="scroll-mt-28" id="try">
-          <div className="cult-card overflow-hidden rounded-3xl">
-            <DrawCanvas
-              candles={market.candles}
-              live={market.live}
-              price={market.price}
-            />
-          </div>
-        </GradientCard>
-      </Reveal>
-    </Section>
+      <div className="container-x px-4 pb-12 sm:px-6 md:pb-20 lg:px-8">
+        <Reveal index={4}>
+          <GradientCard className="scroll-mt-28" id="try">
+            <div className="cult-card overflow-hidden rounded-3xl">
+              <DrawCanvas
+                candles={market.candles}
+                live={market.live}
+                price={market.price}
+              />
+            </div>
+          </GradientCard>
+        </Reveal>
+      </div>
+    </section>
   );
 }

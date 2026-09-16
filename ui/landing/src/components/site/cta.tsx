@@ -1,4 +1,5 @@
 import { GradientCard } from "./gradient-card";
+import { CtaScene } from "./illo";
 import { Reveal } from "./motion";
 import { WaitlistForm } from "./waitlist";
 import { Display } from "./type";
@@ -26,6 +27,9 @@ export function Cta() {
               Be first to draw.
             </Display>
             <WaitlistForm className="mt-8 w-full max-w-md" />
+            {/* Under the form, not beside it: the field is the one thing being
+                asked for and nothing should sit level with it. */}
+            <CtaScene className="-mb-4 mt-8 h-auto w-full max-w-[24rem]" />
           </div>
         </GradientCard>
       </Reveal>
