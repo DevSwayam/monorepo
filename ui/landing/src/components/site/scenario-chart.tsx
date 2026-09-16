@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Candles, spacing } from "./chart";
 import {
   type Candle,
@@ -102,8 +103,13 @@ function pnlArea(bars: Candle[]) {
  * fills green above it or red below, so the figure in the rail and the shape
  * on the chart are the same fact told twice. Nothing else moves: the line you
  * drew is already there, which is the whole idea.
+ *
+ * Memoised because the carousel mounts all three scenarios so their edges can
+ * be seen, and the running one calls `setStep` on every frame. Without this,
+ * one animating chart would redraw the two parked ones sixty times a second to
+ * produce exactly the picture they already had.
  */
-export function ScenarioChart({
+export const ScenarioChart = memo(function ScenarioChart({
   scenario,
   step,
 }: {
@@ -300,4 +306,4 @@ export function ScenarioChart({
       ))}
     </div>
   );
-}
+});

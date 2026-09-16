@@ -2,7 +2,7 @@
 
 import { RailRow, signed } from "./chart";
 import { useInView, useReducedMotion } from "./motion";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   FORECAST_BARS,
@@ -21,8 +21,19 @@ import { Kicker } from "./type";
 const RUN_MS = 4400;
 const HOLD_MS = 2400;
 
-/** The figures beside the chart. Same rows as before, no card around them. */
-function Rail({ scenario, step }: { scenario: Scenario; step: number }) {
+/**
+ * The figures beside the chart. Same rows as before, no card around them.
+ *
+ * Memoised alongside the chart: all three rails are mounted so the neighbouring
+ * panels can be seen, and only one of them is moving.
+ */
+const Rail = memo(function Rail({
+  scenario,
+  step,
+}: {
+  scenario: Scenario;
+  step: number;
+}) {
   const mark = markAt(scenario, step);
   const pnl = pnlAt(mark);
   const done = step >= FORECAST_BARS;
@@ -63,7 +74,7 @@ function Rail({ scenario, step }: { scenario: Scenario; step: number }) {
       </p>
     </div>
   );
-}
+});
 
 /**
  * The three endings, played inside the dark stepped card.
@@ -118,7 +129,28 @@ export function ScenarioPanel() {
   };
 
   const shown = reduced ? FORECAST_BARS : step;
-  const scenario = SCENARIOS[active];
+
+  /*
+   * The panels either side are held at their ending rather than at their
+   * start. A peek should show what that scenario amounts to, and a scenario
+   * frozen before its first candle is a chart of nothing; the memo above means
+   * holding them there costs one render each.
+   */
+  const slides = useMemo(
+    () =>
+      SCENARIOS.map((s, i) => {
+        const at = i === active ? shown : FORECAST_BARS;
+        return {
+          key: s.key,
+          label: s.title,
+          title: s.title,
+          caption: s.caption,
+          visual: <ScenarioChart scenario={s} step={at} />,
+          aside: <Rail scenario={s} step={at} />,
+        };
+      }),
+    [active, shown],
+  );
 
   return (
     <div ref={ref}>
@@ -133,17 +165,11 @@ export function ScenarioPanel() {
           )
         }
         active={active}
-        aside={<Rail scenario={scenario} step={shown} />}
         bodyClass="lg:h-[22rem]"
-        caption={scenario.caption}
         label="Scenarios"
         onSelect={pick}
-        slideKey={scenario.key}
-        steps={SCENARIOS.map((s) => ({ key: s.key, label: s.title }))}
-        title={scenario.title}
-      >
-        <ScenarioChart scenario={scenario} step={shown} />
-      </StepCard>
+        slides={slides}
+      />
     </div>
   );
 }

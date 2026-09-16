@@ -247,6 +247,21 @@ function Tracking() {
  * the eye to land, and it makes the order, which is the actual point of the
  * section, impossible to miss.
  */
+/**
+ * The four steps as carousel panels.
+ *
+ * Built once out here rather than per render: these visuals are fixed drawings
+ * with no state in them, so there is nothing for a rebuild to pick up, and the
+ * carousel mounts all four at once now.
+ */
+const SLIDES = STEPS.map((s) => ({
+  key: s.title,
+  label: s.title,
+  title: s.title,
+  caption: s.caption,
+  visual: s.visual,
+}));
+
 /*
  * Per step. Was 4200, which is a long time to sit in front of a title and one
  * line of caption you have already read; the last two steps arrived after the
@@ -294,8 +309,6 @@ export function HowItWorks() {
     setHeld(e.target instanceof Element && e.target.matches(":focus-visible"));
   };
 
-  const step = STEPS[active];
-
   return (
     <Section id="how-it-works">
       <SectionHead id="how-title" lead="Size, leverage, one line. That's it.">
@@ -315,15 +328,10 @@ export function HowItWorks() {
               )
             }
             active={active}
-            caption={step.caption}
             label="Steps"
             onSelect={setActive}
-            slideKey={step.title}
-            steps={STEPS.map((s) => ({ key: s.title, label: s.title }))}
-            title={step.title}
-          >
-            {step.visual}
-          </StepCard>
+            slides={SLIDES}
+          />
         </div>
       </Reveal>
     </Section>
