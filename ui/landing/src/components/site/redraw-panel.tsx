@@ -30,11 +30,20 @@ const SPLIT = 300;
 
 const HISTORY = CANDLES.slice(-24);
 
+/**
+ * Everything the plot has to be tall enough to hold.
+ *
+ * The drag bounds alone were not enough. They are where the tail can go, but
+ * the deepest point of the line is its trough in the middle, and a shape whose
+ * low sat under the lowest candle drew itself straight through the floor of
+ * the plot. Taking both extreme shapes point by point covers every position
+ * the handle can reach, since the line moves monotonically with its tail.
+ */
 const prices = [
   ...HISTORY.flatMap((c) => [c.h, c.l]),
   ...RISING_BARS.flatMap((c) => [c.h, c.l]),
-  DRAG_MIN,
-  DRAG_MAX,
+  ...lineTo(DRAG_MIN),
+  ...lineTo(DRAG_MAX),
 ];
 const lo = Math.min(...prices);
 const hi = Math.max(...prices);
@@ -86,14 +95,17 @@ const KEY_STEP = 100;
  * it settles. Every waypoint is one of those decisions, and easing between
  * them puts a full stop and a reversal where a real hand has one.
  *
- * Values above 1 are overshoot. The downward room is small on purpose: the
- * line starts only DRAG_MIN above the floor, so the hunt has to happen inside
- * the upward travel rather than below the start. The track ends on exactly 1
- * so the walkthrough always lands on the price the rail is written for.
+ * Values above 1 are overshoot and values below 0 stretch the line further
+ * down than it was drawn. It opens with one of those: the first move of a hand
+ * that still believes the line is right is to push it lower, and showing that
+ * travel is worth the beat it costs, because stretching a drawdown deeper is
+ * the thing a reader reaches for once the handle is theirs. The track ends on
+ * exactly 1 so the walkthrough always lands on the price the rail is written
+ * for.
  */
 const CHASE = [
   { at: 0, to: 0 },
-  { at: 0.07, to: -0.075 },
+  { at: 0.08, to: -0.14 },
   { at: 0.16, to: 0.42 },
   { at: 0.25, to: 0.08 },
   { at: 0.35, to: 0.72 },
@@ -198,10 +210,16 @@ export function RedrawPanel() {
   // line that never dips sets no floor, so the whole stake is at risk, the
   // same reason the canvas refuses to print "$0" there.
   const win = Math.abs(pnlAt(level.target));
-  const lose =
-    Math.abs(level.invalidation - ORDER.entry) / ORDER.entry < 0.002
-      ? STAKE
-      : Math.min(STAKE, Math.abs(pnlAt(level.invalidation)));
+  // A line that only ever goes one way from the entry sets no floor of its
+  // own, so the entry is the floor. Worth naming: the plot has to stop drawing
+  // a second level on top of the first one when that happens, and every line
+  // drawn straight down, which is how this section opens and where the handle
+  // goes if you stretch it, is one of them.
+  const floorOnEntry =
+    Math.abs(level.invalidation - ORDER.entry) / ORDER.entry < 0.002;
+  const lose = floorOnEntry
+    ? STAKE
+    : Math.min(STAKE, Math.abs(pnlAt(level.invalidation)));
   const pts = shape.map((price, i) => ({ x: xOf(i), y: y(price) }));
   const handle = pts[pts.length - 1];
 
@@ -320,15 +338,19 @@ export function RedrawPanel() {
                 y1={y(level.target)}
                 y2={y(level.target)}
               />
-              <line
-                stroke="var(--fg-subtle)"
-                strokeDasharray="3 4"
-                strokeOpacity="0.35"
-                x1={PLOT_L}
-                x2={PLOT_R}
-                y1={y(level.invalidation)}
-                y2={y(level.invalidation)}
-              />
+              {/* Skipped when it would land on the entry line, rather than
+                  laying an identical dash over it. */}
+              {floorOnEntry ? null : (
+                <line
+                  stroke="var(--fg-subtle)"
+                  strokeDasharray="3 4"
+                  strokeOpacity="0.35"
+                  x1={PLOT_L}
+                  x2={PLOT_R}
+                  y1={y(level.invalidation)}
+                  y2={y(level.invalidation)}
+                />
+              )}
 
               <Candles
                 bars={HISTORY}
@@ -471,18 +493,22 @@ export function RedrawPanel() {
             >
               {fmtUsd(ORDER.entry)}
             </span>
-            <span
-              className="-translate-y-full pointer-events-none absolute pb-1 pl-0.5 text-fg-subtle text-xs"
-              style={at(PLOT_L, y(level.invalidation))}
-            >
-              You&rsquo;re out at
-            </span>
-            <span
-              className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-fg-subtle text-xs tabular-nums"
-              style={at(PLOT_R, y(level.invalidation))}
-            >
-              {fmtUsd(snap(level.invalidation))}
-            </span>
+            {floorOnEntry ? null : (
+              <>
+                <span
+                  className="-translate-y-full pointer-events-none absolute pb-1 pl-0.5 text-fg-subtle text-xs"
+                  style={at(PLOT_L, y(level.invalidation))}
+                >
+                  You&rsquo;re out at
+                </span>
+                <span
+                  className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-fg-subtle text-xs tabular-nums"
+                  style={at(PLOT_R, y(level.invalidation))}
+                >
+                  {fmtUsd(snap(level.invalidation))}
+                </span>
+              </>
+            )}
           </div>
         </div>
 

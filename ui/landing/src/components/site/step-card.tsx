@@ -44,7 +44,7 @@ export function StepCard({
   slideKey?: string;
   /** Height of the visual area. Fixed, so slides cannot resize the card. */
   bodyClass?: string;
-  /** Sits beside the dots. The scenario panel puts its pause control here. */
+  /** Sits beside the dots. Both walkthroughs put their pause control here. */
   action?: ReactNode;
   /** A rail of figures to the right of the visual. */
   aside?: ReactNode;
@@ -149,3 +149,48 @@ export function StepCard({
   );
 }
 
+/**
+ * Pause and resume, for the cards that advance on their own.
+ *
+ * Shared rather than written twice because both walkthroughs want the same
+ * control in the same corner, and anything that moves by itself owes the
+ * reader a way to stop it.
+ *
+ * `subject` completes the label, so a screen reader hears "Pause the steps"
+ * rather than three identical unlabelled circles and a pause button.
+ */
+export function PauseButton({
+  paused,
+  onToggle,
+  subject,
+}: {
+  paused: boolean;
+  onToggle: () => void;
+  /** What stops, e.g. "the steps" or "the walkthrough". */
+  subject: string;
+}) {
+  return (
+    <button
+      aria-label={paused ? `Play ${subject}` : `Pause ${subject}`}
+      className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/8 text-fg-subtle transition-colors duration-fast ease-smooth-out hover:bg-white/14 hover:text-foreground"
+      onClick={onToggle}
+      type="button"
+    >
+      <svg
+        aria-hidden="true"
+        className="size-2.5"
+        fill="currentColor"
+        viewBox="0 0 12 12"
+      >
+        {paused ? (
+          <path d="M2 0 L12 6 L2 12 Z" />
+        ) : (
+          <>
+            <rect height="12" width="3.5" x="1" y="0" />
+            <rect height="12" width="3.5" x="7.5" y="0" />
+          </>
+        )}
+      </svg>
+    </button>
+  );
+}

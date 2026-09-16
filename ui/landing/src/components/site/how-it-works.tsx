@@ -1,9 +1,9 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type FocusEvent, type ReactNode, useEffect, useState } from "react";
 import { smoothPath } from "./market-data";
 import { Reveal, useInView, useReducedMotion } from "./motion";
-import { StepCard } from "./step-card";
+import { PauseButton, StepCard } from "./step-card";
 import { Section, SectionHead } from "./ui";
 
 /**
@@ -250,15 +250,22 @@ const CYCLE_MS = 4200;
 
 export function HowItWorks() {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
   const [held, setHeld] = useState(false);
   const reduced = useReducedMotion();
   const [ref, inView] = useInView<HTMLDivElement>(0.4);
 
-  // Held while the pointer or focus is inside, so nothing moves under someone
-  // who is reading it, and stopped off screen so it is not cycling to an empty
-  // room.
+  // Stopped off screen, so it is not cycling to an empty room, and `active` is
+  // a dependency so picking a step by hand gives that step a full turn rather
+  // than whatever was left of the one before it.
+  //
+  // Hovering deliberately does not stop it. It used to: the card is the full
+  // width of the page and most of its height, so a cursor left anywhere over
+  // it — or parked there by someone reaching for the dots — froze the section
+  // for good, with nothing on screen to say why or how to start it again. The
+  // button below is the way to stop it now.
   useEffect(() => {
-    if (reduced || held || !inView) {
+    if (reduced || paused || held || !inView) {
       return;
     }
     const id = setInterval(
@@ -266,7 +273,16 @@ export function HowItWorks() {
       CYCLE_MS,
     );
     return () => clearInterval(id);
-  }, [reduced, held, inView]);
+  }, [reduced, paused, held, inView, active]);
+
+  // Keyboard focus still holds, so the dots don't renumber under someone
+  // tabbing along them. Only keyboard focus: a mouse click lands focus on the
+  // dot it hit, which would otherwise reintroduce the freeze above at the
+  // first click. `:focus-visible` is the browser's own answer to which kind of
+  // focus this was.
+  const onFocus = (e: FocusEvent) => {
+    setHeld(e.target instanceof Element && e.target.matches(":focus-visible"));
+  };
 
   const step = STEPS[active];
 
@@ -277,14 +293,17 @@ export function HowItWorks() {
       </SectionHead>
 
       <Reveal>
-        <div
-          onBlur={() => setHeld(false)}
-          onFocus={() => setHeld(true)}
-          onPointerEnter={() => setHeld(true)}
-          onPointerLeave={() => setHeld(false)}
-          ref={ref}
-        >
+        <div onBlur={() => setHeld(false)} onFocus={onFocus} ref={ref}>
           <StepCard
+            action={
+              reduced ? null : (
+                <PauseButton
+                  onToggle={() => setPaused((v) => !v)}
+                  paused={paused}
+                  subject="the steps"
+                />
+              )
+            }
             active={active}
             caption={step.caption}
             label="Steps"

@@ -268,31 +268,52 @@ export const pnlAt = (price: number) =>
 // --- drawing over your own line --------------------------------------------
 
 /**
- * The line as first drawn: down, from the entry to 62,400.
+ * The line as first drawn: down, hard, from the entry to 60,820.
  *
  * Everything in the redraw section is this shape with its tail lifted. Points
  * are evenly spaced across the forecast window and the first one is pinned to
  * the entry, because the start of a curve is where you got in and dragging the
  * far end must not move it.
+ *
+ * Every step goes down and each one goes down less than the last: a call that
+ * price drops and then finds a floor. It used to zigzag, 64,720 then 64,150
+ * then 63,400 then back up to 63,600, and the zigzag was the whole problem.
+ * Lifting the tail of a wandering line gives a wandering line, so the section
+ * ended up showing a plainly climbing market beside a stack of small ups and
+ * downs, and a reader could not tell what the line was claiming or what the
+ * drag had changed. One direction per leg is what makes the shape a forecast
+ * rather than noise.
  */
 export const DRAWN_DOWN = [
-  ORDER.entry, 64_720, 64_150, 63_400, 63_600, 62_950, 63_150, 62_620, 62_400,
+  ORDER.entry, 63_250, 62_450, 61_800, 61_400, 61_150, 60_980, 60_880, 60_820,
 ];
 
 /** Where the walkthrough drags the tail to. */
 export const DRAG_TO = 66_200;
-/** How far a hand, or an arrow key, may take it. */
-export const DRAG_MIN = 62_100;
+/**
+ * How far a hand, or an arrow key, may take it.
+ *
+ * The floor sits below the drawn tail rather than above it, so the line can be
+ * stretched further down as well as pulled up. Deepening your own drawdown is
+ * the move someone reaches for first, and a handle that will only travel one
+ * way reads as broken the moment they try.
+ */
+export const DRAG_MIN = 59_800;
 export const DRAG_MAX = 67_000;
 
 /**
  * Weight per point, so a drag on the tail barely disturbs the start.
  *
- * Squared rather than linear: with a linear falloff the whole line slides up
+ * Cubed rather than linear: with a linear falloff the whole line slides up
  * like a rigid bar, which is not what dragging one end of a curve does.
+ *
+ * Cubed rather than squared because the trough has to survive the drag. Under
+ * a square the middle of the line came up a quarter of the way with the tail
+ * and the low filled in as it rose, which flattened the drop into a lean and
+ * left the shape with nothing to recover from.
  */
 const PULL = DRAWN_DOWN.map(
-  (_, i) => (i / (DRAWN_DOWN.length - 1)) ** 2,
+  (_, i) => (i / (DRAWN_DOWN.length - 1)) ** 3,
 );
 
 /** The drawn line with its last point at `end`. */
@@ -312,9 +333,13 @@ export function lineTo(end: number) {
  * and the floor is the furthest it goes the other way: the drawdown you drew
  * yourself and therefore agreed to sit through.
  *
- * Which way the trade faces falls out of the same test rather than being read
- * off the end, so a line dragged through the entry turns the position around
- * with it.
+ * Which way the trade faces comes off where the line ends up, so a line
+ * dragged through the entry turns the position around with it. The obvious
+ * alternative, whichever excursion strays furthest from the entry, is wrong
+ * for any shape that dips before it delivers: draw a drop to 62,072 and a
+ * recovery to 66,200 and the drawdown wins by 88 dollars, so a long with a
+ * drawdown you accepted gets reported as a short aiming at the bottom of its
+ * own dip. Destination decides the side; the path decides the two prices.
  */
 export function levelsFor(prices: number[], entry: number = ORDER.entry) {
   const rest = prices.slice(1);
@@ -328,7 +353,7 @@ export function levelsFor(prices: number[], entry: number = ORDER.entry) {
       lo = p;
     }
   }
-  const long = hi - entry >= entry - lo;
+  const long = prices[prices.length - 1] >= entry;
   const target = long ? hi : lo;
   const invalidation = long ? lo : hi;
   return {
@@ -340,15 +365,38 @@ export function levelsFor(prices: number[], entry: number = ORDER.entry) {
   };
 }
 
-/** Price going the other way to the line, which is what starts the drag. */
+/**
+ * Price over the forecast window, walking the shape the line ends up on.
+ *
+ * This was an independent rising walk, which is what put a plainly climbing
+ * market next to a line going the other way and made each of them look
+ * arbitrary. Price traces the finished shape instead: it falls with the line,
+ * the half of the call that was right, and then turns and runs while the line
+ * is still pointing at the floor, the half worth redrawing. That way the drag
+ * answers a disagreement a reader can see rather than one the caption asserts.
+ *
+ * The bars hug the path and drift off it, because price that traced a drawing
+ * exactly would promise something no chart can do. Each close is read off the
+ * path rather than added to the last one, so the drift cannot accumulate into
+ * a series that quietly walks away from the shape.
+ */
 export const RISING_BARS: Candle[] = (() => {
   const rand = mulberry32(51_207);
   const n = 18;
+  const path = lineTo(DRAG_TO);
+  /** The finished shape, read at any fraction across the window. */
+  const pathAt = (f: number) => {
+    const u = f * (path.length - 1);
+    const i = Math.min(path.length - 2, Math.floor(u));
+    return path[i] + (path[i + 1] - path[i]) * (u - i);
+  };
   const out: Candle[] = [];
   let open: number = ORDER.entry;
   for (let i = 0; i < n; i++) {
-    const close = open + 70 + (rand() - 0.38) * 320;
-    const wick = 90 + rand() * 190;
+    // Aimed a bar ahead, so each one closes toward where the shape is going
+    // rather than where it has already been.
+    const close = pathAt((i + 1) / n) + (rand() - 0.5) * 210;
+    const wick = 70 + rand() * 150;
     out.push({
       o: open,
       c: close,
