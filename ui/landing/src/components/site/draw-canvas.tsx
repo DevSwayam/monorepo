@@ -2,6 +2,7 @@
 
 import { Candles, spacing } from "./chart";
 import { SoonButton } from "./soon";
+import { Kicker } from "./type";
 import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -714,12 +715,12 @@ export function DrawCanvas({
             <BitcoinMark />
             Bitcoin
           </span>
-          <span className="font-mono text-foreground text-sm tabular-nums">
+          <span className="figures text-foreground text-sm">
             ${fmtUsd(price)}
           </span>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="rounded-full bg-surface-2 px-2.5 py-1 font-mono text-fg-muted text-xs tabular-nums">
+          <span className="rounded-full bg-surface-2 figures px-2.5 py-1 text-fg-muted text-xs">
             ${MARGIN} · {LEVERAGE}×
           </span>
           {/* Honest label, and it stays: these candles are a random walk, and a
@@ -917,7 +918,7 @@ export function DrawCanvas({
                   <span className="text-fg-subtle text-xs">Right now</span>
                   <span
                     className={cn(
-                      "font-mono text-base tabular-nums",
+                      "figures text-base",
                       stats.now >= 0
                         ? "text-[var(--up)]"
                         : "text-[var(--down)]",
@@ -959,7 +960,7 @@ export function DrawCanvas({
               className="dc-summary surface-raised relative w-full max-w-[21rem] rounded-2xl p-6"
             >
               {/* Outcome first, in three words, carrying the colour. */}
-              <p className="flex items-center justify-center gap-2 text-kicker">
+              <Kicker className="flex items-center justify-center gap-2">
                 <span
                   aria-hidden="true"
                   className={cn(
@@ -978,13 +979,13 @@ export function DrawCanvas({
                       ? "Profit"
                       : "Loss"}
                 </span>
-              </p>
+              </Kicker>
 
               {/* The figure is the point, so nothing else on the card competes
                   with it for size. */}
               <p
                 className={cn(
-                  "mt-2 text-center font-mono text-[2.75rem] leading-none tracking-[-0.03em] tabular-nums",
+                  "mt-2 figures text-center text-[2.75rem] leading-none tracking-[-0.03em]",
                   result.won ? "text-[var(--up)]" : "text-[var(--down)]",
                 )}
               >

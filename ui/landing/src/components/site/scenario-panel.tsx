@@ -15,6 +15,7 @@ import {
 } from "./market-data";
 import { markAt, ScenarioChart } from "./scenario-chart";
 import { PauseButton, StepCard } from "./step-card";
+import { Kicker } from "./type";
 
 /** One scenario plays over this long, then holds so the ending can be read. */
 const RUN_MS = 4400;
@@ -31,8 +32,8 @@ function Rail({ scenario, step }: { scenario: Scenario; step: number }) {
   return (
     <div className="flex flex-col gap-6 rounded-2xl bg-white/4 p-5">
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-fg-subtle text-kicker">Bitcoin</span>
-        <span className="rounded-full bg-brand/14 px-2.5 py-1 font-mono text-brand text-xs">
+        <Kicker as="span">Bitcoin</Kicker>
+        <span className="rounded-full bg-brand/14 figures px-2.5 py-1 text-brand text-xs">
           {ORDER.side === "long" ? "up" : "down"} {ORDER.leverage}x
         </span>
       </div>
@@ -53,7 +54,7 @@ function Rail({ scenario, step }: { scenario: Scenario; step: number }) {
 
       <p
         className={cn(
-          "font-mono text-xs transition-opacity duration-300",
+          "figures text-xs transition-opacity duration-300",
           done ? "opacity-100" : "opacity-0",
         )}
       >

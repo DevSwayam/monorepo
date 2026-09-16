@@ -89,7 +89,7 @@ export function RailRow({
     <div className="flex items-baseline justify-between gap-4">
       <span className="text-fg-subtle text-sm">{label}</span>
       <span
-        className={cn("font-mono text-sm tabular-nums", tone ?? "text-foreground")}
+        className={cn("figures text-sm", tone ?? "text-foreground")}
       >
         {value}
       </span>

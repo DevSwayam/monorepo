@@ -1,6 +1,7 @@
 import { GradientCard } from "./gradient-card";
 import { Reveal } from "./motion";
 import { WaitlistForm } from "./waitlist";
+import { Display } from "./type";
 import { Section } from "./ui";
 
 /**
@@ -21,9 +22,9 @@ export function Cta() {
       <Reveal>
         <GradientCard glow="always">
           <div className="surface flex flex-col items-center overflow-hidden rounded-3xl px-6 py-16 text-center md:px-12 md:py-20">
-            <h2 className="max-w-[16ch] text-display" id="cta-title">
+            <Display as="h2" className="max-w-[16ch]" id="cta-title">
               Be first to draw.
-            </h2>
+            </Display>
             <WaitlistForm className="mt-8 w-full max-w-md" />
           </div>
         </GradientCard>

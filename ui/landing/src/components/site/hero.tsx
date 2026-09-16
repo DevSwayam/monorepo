@@ -3,6 +3,7 @@ import { DrawCanvas } from "./draw-canvas";
 import { GradientCard } from "./gradient-card";
 import { HeadlineMix } from "./headline-mix";
 import { Reveal } from "./motion";
+import { Body } from "./type";
 import { Section } from "./ui";
 
 /**
@@ -29,10 +30,10 @@ export async function Hero() {
         </Reveal>
 
         <Reveal className="contents" index={3}>
-          <p className="measure mt-7 text-balance text-body text-fg-muted md:text-lg">
+          <Body className="measure mt-7 text-balance md:text-lg">
             Think it goes up? Draw it going up.{" "}
             <span className="text-foreground">That&rsquo;s the whole thing.</span>
-          </p>
+          </Body>
         </Reveal>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useInView, useReducedMotion } from "./motion";
 import { Candles, RailRow, spacing } from "./chart";
+import { Kicker } from "./type";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -476,7 +477,7 @@ export function RedrawPanel() {
               Aiming for
             </span>
             <span
-              className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-brand text-xs tabular-nums"
+              className="-translate-y-1/2 pointer-events-none absolute figures pl-3 text-brand text-xs"
               style={at(PLOT_R, y(level.target))}
             >
               {fmtUsd(snap(level.target))}
@@ -488,7 +489,7 @@ export function RedrawPanel() {
               You&rsquo;re in at
             </span>
             <span
-              className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-fg-subtle text-xs tabular-nums"
+              className="-translate-y-1/2 pointer-events-none absolute figures pl-3 text-fg-subtle text-xs"
               style={at(PLOT_R, ENTRY_Y)}
             >
               {fmtUsd(ORDER.entry)}
@@ -502,7 +503,7 @@ export function RedrawPanel() {
                   You&rsquo;re out at
                 </span>
                 <span
-                  className="-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-fg-subtle text-xs tabular-nums"
+                  className="-translate-y-1/2 pointer-events-none absolute figures pl-3 text-fg-subtle text-xs"
                   style={at(PLOT_R, y(level.invalidation))}
                 >
                   {fmtUsd(snap(level.invalidation))}
@@ -514,10 +515,8 @@ export function RedrawPanel() {
 
         <aside className="flex flex-col gap-7 rounded-xl bg-surface-2 p-5 shadow-[inset_0_0_0_1px_var(--edge)]">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-fg-subtle text-kicker">
-              Bitcoin
-            </span>
-            <span className="rounded-full bg-brand/14 px-2.5 py-1 font-mono text-brand text-xs">
+            <Kicker as="span">Bitcoin</Kicker>
+            <span className="rounded-full bg-brand/14 figures px-2.5 py-1 text-brand text-xs">
               {level.long ? "up" : "down"} {ORDER.leverage}×
             </span>
           </div>
@@ -559,11 +558,11 @@ export function RedrawPanel() {
       </div>
 
       <div className="flex items-center justify-between gap-4 px-5 pb-4 md:px-6">
-        <span className="font-mono text-fg-subtle text-xs">
+        <span className="text-fg-subtle text-xs">
           drag the square on the end of the line
         </span>
         <button
-          className="pressable cursor-pointer rounded-full bg-surface-2 px-3.5 py-1.5 font-mono text-fg-subtle text-xs shadow-[inset_0_0_0_1px_var(--edge)] transition-colors duration-fast ease-smooth-out hover:text-foreground"
+          className="pressable cursor-pointer rounded-full bg-surface-2 px-3.5 py-1.5 text-fg-subtle text-xs shadow-[inset_0_0_0_1px_var(--edge)] transition-colors duration-fast ease-smooth-out hover:text-foreground"
           onClick={() => {
             played.current = false;
             setTaken(false);

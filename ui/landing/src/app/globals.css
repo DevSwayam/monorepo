@@ -51,14 +51,12 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
   --animate-skeleton: skeleton 2s -1s infinite linear;
   --animate-caret-blink: 1s ease-out infinite caret-blink;
   --animate-toast-success-odd: toast-success-odd 0.32s cubic-bezier(0.5, 1, 0.89, 1);
   --animate-toast-success-even: toast-success-even 0.32s cubic-bezier(0.5, 1, 0.89, 1);
   --animate-toast-error-odd: toast-error-odd 0.28s cubic-bezier(0.5, 1, 0.89, 1);
   --animate-toast-error-even: toast-error-even 0.28s cubic-bezier(0.5, 1, 0.89, 1);
-  --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -383,35 +381,63 @@
   --shadow-float: var(--shadow-float);
   --shadow-brand: var(--shadow-brand);
 
-  /* family.co's ramp, an iOS one: 17/26 body, 15/22 secondary, 13/18 caption.
-     Tracking is negative and paired to the size, not set once.
+  /* The type scale. Five steps, one face, and every step carries its own
+     size, line height, tracking and weight so a call site never sets them by
+     hand. `src/components/site/type.tsx` is the component for each step; the
+     two are meant to be edited together.
+
+     family.co's ramp, an iOS one: 17/26 body, 15/22 secondary, 13/18 caption.
+     Tracking is negative and paired to the size, not set once, because a face
+     that is fitted for a paragraph is too loose at 68px and one fitted for a
+     headline is too tight at 13.
+
+     Tracking was retuned when the headings moved from Figtree to Inter. Inter
+     is a narrower, more closely fitted drawing than Figtree at the same size,
+     so the old heading value of -0.0307em, which was compensating for
+     Figtree's wider geometric bowls, closed Inter's headings into each other.
+     The ramp now runs from -0.022em at display sizes to zero at kicker: large
+     text needs the optical correction and small text needs the space.
 
      Weights run a step heavier than family.co's 500: headings at 600 and body
-     at 450. Inter and Figtree are both variable, so 450 is a real weight and
-     not a synthesised one. */
+     at 440. Inter is variable, so both are real weights and not synthesised. */
   --text-display: clamp(2.75rem, 5.6vw, 4.25rem);
-  --text-display--line-height: 1.1;
-  --text-display--letter-spacing: -0.02em;
+  --text-display--line-height: 1.06;
+  --text-display--letter-spacing: -0.022em;
   --text-display--font-weight: 600;
 
   --text-heading: clamp(2rem, 3.4vw, 2.75rem);
-  --text-heading--line-height: 1.09;
-  --text-heading--letter-spacing: -0.0307em;
+  --text-heading--line-height: 1.1;
+  --text-heading--letter-spacing: -0.019em;
   --text-heading--font-weight: 600;
 
   --text-title: 1.1875rem;
   --text-title--line-height: 1.42;
-  --text-title--letter-spacing: -0.0158em;
+  --text-title--letter-spacing: -0.012em;
   --text-title--font-weight: 600;
 
   --text-body: 1.0625rem;
   --text-body--line-height: 1.529;
-  --text-body--letter-spacing: -0.0129em;
-  --text-body--font-weight: 450;
+  --text-body--letter-spacing: -0.009em;
+  --text-body--font-weight: 440;
+
+  /* Caption and kicker are the same size and a different job, which is why
+     both exist. Kicker is a label at 600, skimmed and not read. Caption is
+     small prose at the body weight with leading to match, for the line of
+     fine print under a form or a figure.
+
+     Caption was being used before it existed: `text-caption` appeared twice in
+     the waitlist and was defined nowhere, so it emitted no CSS, and inside
+     `cn()` tailwind-merge read the unknown `text-*` as a colour and dropped it
+     against the `text-fg-subtle` beside it. It rendered at inherited body size
+     both ways. */
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.6;
+  --text-caption--letter-spacing: -0.006em;
+  --text-caption--font-weight: 440;
 
   --text-kicker: 0.8125rem;
   --text-kicker--line-height: 1.385;
-  --text-kicker--letter-spacing: -0.01em;
+  --text-kicker--letter-spacing: 0em;
   --text-kicker--font-weight: 600;
 
   /* 100ms hover and press, 220ms transforms, one curve. Was 350-400ms. */
@@ -452,6 +478,28 @@
 @utility font-pixel {
   font-family: var(--font-pixel);
   font-feature-settings: "tnum" 1;
+}
+
+/*
+ * Numbers that have to hold still.
+ *
+ * This is what the monospace face was actually for. A price ticking in place
+ * reflows on every frame if its digits are proportional, and a column of
+ * figures in a rail will not line up. Inter's tabular figures are equal-width,
+ * which fixes both without a second typeface.
+ *
+ * The slashed zero comes with it. These are prices and quantities, and 0 and O
+ * are worth telling apart when the number is the content.
+ *
+ * Numeric features only, deliberately. Resetting letter-spacing here too was
+ * tempting, since the body step's negative tracking is fitted to letters and
+ * squeezes a nine-character price, but it would then be competing with every
+ * call site that sets tracking on purpose, and which of the two wins comes
+ * down to utility ordering rather than intent. Where inherited tracking is
+ * wrong on a figure, `tracking-normal` says so at the call site.
+ */
+@utility figures {
+  font-variant-numeric: tabular-nums slashed-zero;
 }
 
 @utility bg-grid {
@@ -832,12 +880,13 @@
   /* No ambient wash. A tinted white looks like a gradient left in by mistake. */
   body {
     background: var(--bg);
-    font-weight: 450;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-weight: var(--text-body--font-weight);
+    font-optical-sizing: auto;
   }
   h1,
   h2,
   h3 {
-    font-family: var(--font-heading), var(--font-sans), sans-serif;
     font-optical-sizing: auto;
     text-wrap: balance;
   }

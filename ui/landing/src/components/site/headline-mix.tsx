@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { Display } from "./type";
 
 const LINES = [
   ["Draw", "the", "chart."],
@@ -22,7 +22,7 @@ const LINES = [
  */
 export function HeadlineMix({ className }: { className?: string }) {
   return (
-    <h1 className={cn("text-display", className)} id="hero-title">
+    <Display className={className} id="hero-title">
       {LINES.map((words) => {
         // react-hooks/purity flags Math.random in render, and is right to for a
         // client component: an unlucky re-render would reshuffle the headline
@@ -55,6 +55,6 @@ export function HeadlineMix({ className }: { className?: string }) {
           </span>
         );
       })}
-    </h1>
+    </Display>
   );
 }

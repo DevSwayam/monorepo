@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./motion";
+import { Body, Heading } from "./type";
 
 /**
  * The page grid.
@@ -71,39 +72,6 @@ export function Panel({
   );
 }
 
-function Headline({
-  children,
-  as: Tag = "h2",
-  className,
-  id,
-}: {
-  children: ReactNode;
-  as?: "h1" | "h2" | "h3";
-  className?: string;
-  id?: string;
-}) {
-  return (
-    <Tag className={cn("text-heading text-foreground", className)} id={id}>
-      {children}
-    </Tag>
-  );
-}
-
-/** Small mono label, for figures inside a card. Sentence case, never caps. */
-export function Kicker({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <p className={cn("font-mono text-fg-subtle text-kicker", className)}>
-      {children}
-    </p>
-  );
-}
-
 /**
  * Headline and an optional lead. Opens most sections.
  *
@@ -134,18 +102,15 @@ export function SectionHead({
         className,
       )}
     >
-      <Headline className={cn("max-w-[20ch]", !centred && "mt-0")} id={id}>
+      <Heading className={cn("max-w-[20ch]", !centred && "mt-0")} id={id}>
         {children}
-      </Headline>
+      </Heading>
       {lead ? (
-        <p
-          className={cn(
-            "mt-5 text-body text-fg-muted",
-            centred ? "max-w-[54ch]" : "max-w-[56ch]",
-          )}
+        <Body
+          className={cn("mt-5", centred ? "max-w-[54ch]" : "max-w-[56ch]")}
         >
           {lead}
-        </p>
+        </Body>
       ) : null}
     </Reveal>
   );

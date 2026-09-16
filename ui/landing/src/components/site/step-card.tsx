@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { GradientCard } from "./gradient-card";
+import { Body } from "./type";
 
 export type StepDot = {
   key: string;
@@ -64,9 +65,7 @@ export function StepCard({
           <h3 className="font-semibold text-[1.375rem] text-foreground tracking-[-0.02em] md:text-2xl">
             {title}
           </h3>
-          <p className="min-h-[3.25rem] max-w-[46ch] text-body text-fg-muted">
-            {caption}
-          </p>
+          <Body className="min-h-[3.25rem] max-w-[46ch]">{caption}</Body>
         </div>
 
         <div
