@@ -289,7 +289,7 @@ export function ScenarioChart({
             {lvl.label}
           </span>
           <span
-            className={`-translate-y-1/2 pointer-events-none absolute pl-3 font-mono text-xs tabular-nums ${
+            className={`-translate-y-1/2 pointer-events-none absolute figures pl-3 text-xs ${
               lvl.accent ? "text-brand" : "text-fg-subtle"
             }`}
             style={at(PLOT_R, y(lvl.price))}

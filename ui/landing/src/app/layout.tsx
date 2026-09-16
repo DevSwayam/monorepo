@@ -1,39 +1,41 @@
 import { GeistPixelSquare } from "geist/font/pixel";
 import type { Metadata, Viewport } from "next";
-import { Figtree, Geist_Mono, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 /*
- * Two faces, the way family.co sets its pages.
+ * One face: Inter, everywhere.
  *
- * Family runs a warm geometric grotesque on headings and Inter underneath it
- * at 17px with tracking paired to each size. Their display face is proprietary,
- * so Figtree stands in: same geometric skeleton, same slightly squared bowls,
- * and it holds up at the 500 weight the whole scale is set in. The pairing
- * matters more than the exact face, because it is what stops the headings from
- * reading as big body copy.
+ * It used to be three. Figtree carried the headings as a stand-in for
+ * family.co's proprietary display face, Geist Mono carried every price and
+ * figure, and Inter carried the prose. Three faces means three sets of metrics
+ * to keep in agreement, and they did not stay in agreement: a heading and the
+ * paragraph under it were tracked to different rules, and the figures in a
+ * card were a different width and a different grey from the words beside them.
  *
- * Geist is gone from the text faces. It is a fine neutral grotesque and that
- * is the problem: on a warm ground it reads cold, and the warmth is the thing
- * being ported.
+ * One family removes the co-ordination problem rather than managing it. What
+ * separated the faces now comes from the scale in globals.css, which is what
+ * was doing most of the work anyway: size, weight and tracking per step, set
+ * once. Headings read as headings because they are 600 at a display size with
+ * tight tracking, not because they are a different typeface.
+ *
+ * Inter carries the figures too. It is a UI face with real tabular figures, so
+ * `font-variant-numeric: tabular-nums` holds a column of prices still while it
+ * ticks, which is the only thing the monospace was needed for.
+ *
+ * `--font-pixel` stays. It is the one deliberate accent on the page, in one
+ * place, and it is a device rather than a second opinion about body copy.
  */
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
-});
-
-const figtree = Figtree({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  display: "swap",
+  // Inter's optical size axis, so large text gets the tighter, more closely
+  // fitted drawing and small text keeps its open apertures. The type scale
+  // leans on this: `font-optical-sizing: auto` has nothing to act on without
+  // the axis present.
+  axes: ["opsz"],
 });
 
 const SITE = "https://skech.trade";
@@ -103,7 +105,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`h-full ${inter.variable} ${figtree.variable} ${geistMono.variable} ${GeistPixelSquare.variable} antialiased`}
+      className={`h-full ${inter.variable} ${GeistPixelSquare.variable} antialiased`}
       // GeistPixelSquare publishes --font-geist-pixel-square; alias it to the
       // name the font-pixel utility reads.
       style={{ ["--font-pixel" as string]: "var(--font-geist-pixel-square)" }}

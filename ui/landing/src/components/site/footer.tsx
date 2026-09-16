@@ -38,7 +38,7 @@ export function SiteFooter() {
       </div>
 
       <div className="mt-8 flex flex-col gap-3 px-2 md:flex-row md:items-center md:justify-between">
-        <p className="font-mono text-fg-subtle text-xs">
+        <p className="text-fg-subtle text-xs">
           &copy; {new Date().getFullYear()} skech
         </p>
         <p className="max-w-[46ch] text-fg-subtle text-xs leading-[1.6]">

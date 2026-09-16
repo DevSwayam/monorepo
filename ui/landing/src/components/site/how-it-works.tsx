@@ -4,6 +4,7 @@ import { type FocusEvent, type ReactNode, useEffect, useState } from "react";
 import { smoothPath } from "./market-data";
 import { Reveal, useInView, useReducedMotion } from "./motion";
 import { PauseButton, StepCard } from "./step-card";
+import { Body } from "./type";
 import { Section, SectionHead } from "./ui";
 
 /**
@@ -110,8 +111,8 @@ function Amount() {
         <span
           className={
             s === 100
-              ? "rounded-full bg-brand/15 px-6 py-3 font-mono text-2xl text-brand tabular-nums"
-              : "rounded-full bg-surface-2 px-6 py-3 font-mono text-2xl text-fg-muted tabular-nums"
+              ? "rounded-full bg-brand/15 figures px-6 py-3 text-2xl text-brand"
+              : "rounded-full bg-surface-2 figures px-6 py-3 text-2xl text-fg-muted"
           }
           key={s}
         >
@@ -147,8 +148,8 @@ function Leverage() {
         ))}
       </div>
       <div className="flex items-baseline justify-between">
-        <span className="text-body text-fg-subtle">trading with</span>
-        <span className="font-mono text-3xl text-brand tabular-nums">$500</span>
+        <Body as="span" tone="subtle">trading with</Body>
+        <span className="figures text-3xl text-brand">$500</span>
       </div>
     </div>
   );
@@ -246,7 +247,16 @@ function Tracking() {
  * the eye to land, and it makes the order, which is the actual point of the
  * section, impossible to miss.
  */
-const CYCLE_MS = 4200;
+/*
+ * Per step. Was 4200, which is a long time to sit in front of a title and one
+ * line of caption you have already read; the last two steps arrived after the
+ * reader had given up on the card. Four steps now run in twelve seconds rather
+ * than seventeen.
+ *
+ * Not lower than this. The visual replays its entrance on every change, and
+ * under about 2.5s the card reads as flicking rather than stepping.
+ */
+const CYCLE_MS = 3000;
 
 export function HowItWorks() {
   const [active, setActive] = useState(0);

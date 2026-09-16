@@ -38,11 +38,13 @@ export default async function OpengraphImage() {
     join(process.cwd(), "public/assets/logo-mark-ink.png"),
   );
 
-  // Satori cannot read woff2, so next/font is unavailable here. Figtree ships
-  // a TTF, which is the same display face the page is set in.
+  // Satori cannot read woff2, so next/font is unavailable here and the face has
+  // to be loaded off disk. These are the same Inter the page is set in, as
+  // static instances: Satori resolves a weight by picking a registered face,
+  // not by interpolating a variable axis, so 400 and 600 are both real files.
   const [regular, semibold] = await Promise.all([
-    readFile(join(process.cwd(), "src/app/_fonts/Figtree-400.ttf")),
-    readFile(join(process.cwd(), "src/app/_fonts/Figtree-600.ttf")),
+    readFile(join(process.cwd(), "src/app/_fonts/Inter-400.ttf")),
+    readFile(join(process.cwd(), "src/app/_fonts/Inter-600.ttf")),
   ]);
 
   return new ImageResponse(
@@ -56,7 +58,7 @@ export default async function OpengraphImage() {
           height: "100%",
           padding: 64,
           backgroundColor: "#ffffff",
-          fontFamily: "Figtree",
+          fontFamily: "Inter",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
@@ -154,8 +156,8 @@ export default async function OpengraphImage() {
     {
       ...size,
       fonts: [
-        { name: "Figtree", data: regular, weight: 400, style: "normal" },
-        { name: "Figtree", data: semibold, weight: 600, style: "normal" },
+        { name: "Inter", data: regular, weight: 400, style: "normal" },
+        { name: "Inter", data: semibold, weight: 600, style: "normal" },
       ],
     },
   );

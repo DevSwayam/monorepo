@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Body, Caption } from "./type";
 
 type State = "idle" | "sending" | "done";
 
@@ -58,7 +59,7 @@ export function WaitlistForm({ className }: { className?: string }) {
     // floating against the middle of a paragraph.
     return (
       <div className={cn("w-full", className)}>
-        <p className="flex items-center justify-center gap-2.5 text-body text-foreground">
+        <Body className="flex items-center justify-center gap-2.5" tone="default">
           <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-up text-white">
             <svg
               aria-hidden="true"
@@ -76,10 +77,10 @@ export function WaitlistForm({ className }: { className?: string }) {
             </svg>
           </span>
           You&rsquo;re on the list.
-        </p>
-        <p className="mt-3 text-caption text-fg-subtle">
+        </Body>
+        <Caption className="mt-3">
           We&rsquo;ll email you when the beta opens.
-        </p>
+        </Caption>
       </div>
     );
   }
@@ -110,12 +111,13 @@ export function WaitlistForm({ className }: { className?: string }) {
         </button>
       </div>
 
-      <p
-        className={cn("mt-3 text-caption", error ? "text-down" : "text-fg-subtle")}
+      <Caption
+        className="mt-3"
         role={error ? "alert" : undefined}
+        tone={error ? "down" : "subtle"}
       >
         {error ?? "One email when the beta opens. Nothing else."}
-      </p>
+      </Caption>
     </form>
   );
 }
