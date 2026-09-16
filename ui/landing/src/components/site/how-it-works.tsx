@@ -247,7 +247,16 @@ function Tracking() {
  * the eye to land, and it makes the order, which is the actual point of the
  * section, impossible to miss.
  */
-const CYCLE_MS = 4200;
+/*
+ * Per step. Was 4200, which is a long time to sit in front of a title and one
+ * line of caption you have already read; the last two steps arrived after the
+ * reader had given up on the card. Four steps now run in twelve seconds rather
+ * than seventeen.
+ *
+ * Not lower than this. The visual replays its entrance on every change, and
+ * under about 2.5s the card reads as flicking rather than stepping.
+ */
+const CYCLE_MS = 3000;
 
 export function HowItWorks() {
   const [active, setActive] = useState(0);
