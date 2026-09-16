@@ -22,14 +22,18 @@
 .fees { grid-area: fees; }
 .markets { grid-area: markets; background: #fbfaf9; }
 .redraw { grid-area: redraw; }
-/* The wide redraw art carries its own generous padding inside the PNG, so a
-   full-height tile reads as a band of empty blue above it. Shorten the tile
-   and let the slack sit between caption and art, where a gap belongs. */
+/* The wide redraw art carries its own padding inside the PNG, so `contain`
+   left a band of empty blue above it. `cover` fills the tile instead, and the
+   tile height is then the crop: shorter eats more of the baked-in blank,
+   taller shows more of it. The art is wide, so none of the drawing is lost. */
 .redraw .artwork { flex: none; height: 8.75rem; margin-top: auto; }
-.redraw .artwork img { object-fit: contain; }
+.redraw .artwork img { object-fit: cover; object-position: center; }
 .rewards { grid-area: rewards; display: grid; grid-template-columns: 0.9fr 1.1fr; align-items: center; border-radius: 2rem 2rem 5rem 2rem; }
 .rewards .caption { padding-bottom: 1.75rem; }
-.rewards .artwork { height: calc(100% - 2rem); background: #edf2fd; }
+/* The card's bottom-right corner is a 5rem sweep and the tile sits 1rem
+   inside it, so the tile's own corner has to be 4rem to stay concentric.
+   At 1.25rem it cut across the curve. */
+.rewards .artwork { height: calc(100% - 2rem); background: #edf2fd; border-bottom-right-radius: 4rem; }
 @media (min-width: 48rem) and (max-width: 63.999rem) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "funding funding" "leverage fees" "markets redraw" "rewards rewards"; grid-template-rows: 18rem 23rem 23rem 18rem; }
   .leverage { border-radius: 4rem 4rem 2rem 2rem; }
@@ -47,6 +51,7 @@
   .funding { border-top-left-radius: 3rem; }
   .leverage { border-radius: 4rem 4rem 1.75rem 1.75rem; }
   .rewards { border-bottom-right-radius: 3.5rem; }
+  .rewards .artwork { border-bottom-right-radius: 2.5rem; }
   .caption, .leverage .caption { padding: 1.5rem 1.5rem 0; }
   .leverage .caption { padding-top: 2rem; }
   .caption h3 { font-size: 1.75rem; }
