@@ -24,7 +24,7 @@ import { type Candle, fmtUsd, smoothPath } from "./market-data";
  * able to put a finger on it. So this is the real interaction: drag across the
  * empty half, and then watch the market walk into the line you left.
  *
- * The candles are a simulation, and the chip says so. What matters is that they
+ * The candles are a simulation. What matters is that they
  * move: a still chart asks you to imagine a market, and nobody imagines one. A
  * second per candle is fast enough that the next bar is always nearly here,
  * which is the whole reason it is worth sitting through. Real BTC history seeds
@@ -32,9 +32,19 @@ import { type Candle, fmtUsd, smoothPath } from "./market-data";
  *
  * Deliberately no vocabulary. Nothing here says entry, target, invalidation,
  * leverage or liquidation; see ui/landing/CONTENT.md §4 for the word list this
- * component is written against. The stake and the multiple are fixed and shown
- * as one chip, because a demo that opens with settings is a demo that opens
- * with homework.
+ * component is written against.
+ *
+ * The stake and the multiple are fixed at $100 and 5x and no longer shown. They
+ * were one chip in the header, which is a demo opening with settings you cannot
+ * change; the summary quotes the money at the end, which is the only point at
+ * which either number means anything to a reader.
+ *
+ * Nothing on the widget now says the candles are not market data. The word
+ * "practice" sat beside that chip and went with it. The figures are honest —
+ * `MARGIN` still drives the arithmetic — but the disclosure is gone from the
+ * page, and BTC's real last close seeding the walk is what makes the opening
+ * frame convincing. If it needs saying again, the section heading above has the
+ * room for it.
  *
  * The level rule matches the one in the FAQ, via `levelsFor`: the end of the
  * curve is what you're aiming at, and the furthest it strays the wrong way is
@@ -740,14 +750,6 @@ export function DrawCanvas({
           </span>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="rounded-full bg-surface-2 figures px-2.5 py-1 text-fg-muted text-xs">
-            ${MARGIN} · {LEVERAGE}×
-          </span>
-          {/* Honest label, and it stays: these candles are a random walk, and a
-              page that lets one pass for market data is lying. What went is the
-              pulsing green dot that used to sit next to it, which is the
-              universal "live feed" tell and was claiming the opposite. */}
-          <span className="text-fg-subtle text-xs">practice</span>
           <ExpandButton />
         </div>
       </div>
@@ -948,11 +950,16 @@ export function DrawCanvas({
         overflowed by 93px, the plot box clips its overflow, and both buttons
         ended up outside it. Not merely cut off — `elementFromPoint` at their
         centres returned what was behind them, so "Start drawing for real"
-        and "Draw another" could not be tapped at all. The shell is 273px at
-        the same width, which the card fits inside with room over.
+        and "Draw another" could not be tapped at all.
+
+        The shell is the box to measure against, and it is not generous:
+        dropping the stake chip out of the header took it from 273px to 237px
+        in one edit, which left the card a single pixel of clearance. Hence the
+        tighter padding below `sm`. The margin wants to survive the next change
+        to the header, not just this one.
       */}
       {phase === "settled" && result ? (
-        <div className="absolute inset-0 z-20 grid place-items-center p-3 sm:p-4">
+        <div className="absolute inset-0 z-20 grid place-items-center p-2 sm:p-4">
           {/* The scrim. A card this size over moving candles is unreadable
               without one, and pushing the market back is also what says the
               trade is over. */}
@@ -962,7 +969,7 @@ export function DrawCanvas({
           />
           <div
             aria-live="polite"
-            className="dc-summary surface-raised relative w-full max-w-[21rem] rounded-2xl p-5 sm:p-6"
+            className="dc-summary surface-raised relative w-full max-w-[21rem] rounded-2xl p-4 sm:p-6"
           >
             {/* Outcome first, in three words, carrying the colour. */}
             <Kicker className="flex items-center justify-center gap-2">
@@ -997,7 +1004,7 @@ export function DrawCanvas({
               {result.won ? "+" : "−"}${fmtUsd(Math.abs(result.pnl))}
             </p>
 
-            <div className="mt-5 flex flex-col gap-2 sm:mt-6">
+            <div className="mt-4 flex flex-col gap-2 sm:mt-6">
               <SoonButton
                 className="pressable h-11 w-full rounded-full bg-primary text-base text-primary-foreground transition-colors duration-micro ease-smooth-out hover:bg-primary/90 sm:h-11 sm:text-base"
                 detail="Drawing with real money opens with the public testnet."

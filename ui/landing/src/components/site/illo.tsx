@@ -129,14 +129,24 @@ export function HeroScene() {
       <IllustrationPalette />
       <Flank slot="heroLeft" side="left" />
       <Flank slot="heroRight" side="right" />
+      {/*
+        The one illustration here that is optimised rather than served raw.
+        The others are small palette PNGs where Next's lossy pass adds fringes
+        that the dark-mode remap then amplifies; this one is a 1402px asset
+        drawn at 320px, and `unoptimized` means no srcset, so the browser was
+        doing the whole 2.19x reduction itself in one step and softening the
+        edges. Sharp resamples it once, properly, at each width in the srcset.
+        `quality` is up at 96 because the art is flat colour with hard edges,
+        which is exactly what a default-quality encode smears.
+      */}
       <Image
         alt=""
         className={cn(styles.image, styles.legacyImage, styles.phoneArt)}
         fetchPriority="high"
         loading="eager"
-        sizes="(max-width: 47.999rem) 90vw, 1px"
+        quality={96}
+        sizes="20rem"
         src={heroPhone}
-        unoptimized
       />
     </div>
   );
