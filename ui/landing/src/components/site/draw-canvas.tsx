@@ -411,30 +411,17 @@ function BitcoinMark() {
  * card reads as a rendering fault.
  */
 function PriceTag({ price, y }: { price: number; y: number }) {
-  const x = PLOT_R + 6;
-  const w = W - x - 4;
-  const top = Math.min(PLOT_B - 20, Math.max(PLOT_T + 2, y - 9));
+  // Clamped inside the plot so the tag cannot ride off the top or bottom as the
+  // band moves. The rule it belongs to can sit anywhere; a label half outside
+  // the card reads as a rendering fault.
+  const top = Math.min(PLOT_B - 12, Math.max(PLOT_T + 12, y));
   return (
-    <g>
-      <rect
-        fill="var(--surface-2)"
-        height="18"
-        rx="5"
-        width={w}
-        x={x}
-        y={top}
-      />
-      <text
-        fill="var(--fg-muted)"
-        fontSize="10.5"
-        style={{ fontFamily: "var(--font-sans)" }}
-        textAnchor="middle"
-        x={x + w / 2}
-        y={top + 12.5}
-      >
-        {fmtUsd(price)}
-      </text>
-    </g>
+    <span
+      className="pointer-events-none absolute -translate-y-1/2 rounded-full bg-surface-3 px-2.5 py-1 text-foreground text-sm tabular-nums shadow-[0_1px_6px_var(--bg)] sm:text-base"
+      style={{ right: `${(4 / W) * 100}%`, top: `${(top / H) * 100}%` }}
+    >
+      {fmtUsd(price)}
+    </span>
   );
 }
 
@@ -808,15 +795,6 @@ export function DrawCanvas({
             y2={sc.y(hasLine ? entry : price)}
           />
 
-          {/*
-            The number that line stands for, parked in the gutter at the right.
-            A rule across a chart with no figure on it makes you go and find the
-            price in the header and hold both in your head; putting it on the
-            end of the rule is how every trading screen does it, and it costs
-            the 70px the plot already leaves free.
-          */}
-          <PriceTag price={hasLine ? entry : price} y={sc.y(hasLine ? entry : price)} />
-
           {/* history */}
           <Candles
             bars={feed}
@@ -926,6 +904,30 @@ export function DrawCanvas({
             </g>
           ) : null}
         </svg>
+
+        {/*
+          The number that line stands for, on the end of the rule. A rule across
+          a chart with no figure on it makes you go and find the price in the
+          header and hold both in your head; putting it on the end is how every
+          trading screen does it.
+
+          HTML rather than an SVG `<text>`, which is what it used to be. Font
+          sizes inside the chart are viewBox units, and the viewBox is 760 wide
+          against a plot that is 334px on a phone — so `fontSize="10.5"` was
+          being scaled by 0.44 and rendering at under five pixels. Out here it
+          is ordinary CSS type at a size that does not depend on how wide the
+          chart happens to be, and it can take `--foreground` against a filled
+          chip instead of the muted grey it had on the plot's own background.
+
+          Anchored to the right edge and allowed to overlap the plot: the gutter
+          is 70 viewBox units, which is 31px at phone width and narrower than
+          the number itself. The chip's own fill is what keeps it readable over
+          the grid.
+        */}
+        <PriceTag
+          price={hasLine ? entry : price}
+          y={sc.y(hasLine ? entry : price)}
+        />
 
         {phase === "running" && run.length > 0 && <CandlePnl candles={run.map((bar, index) => ({
           x: (SPLIT + (index + 0.5) * runWidth) / W * 100,
