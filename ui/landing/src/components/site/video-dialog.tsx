@@ -34,9 +34,30 @@ function PlayGlyph({ className }: { className?: string }) {
  * stops playback, where pausing through the embed API would need their second
  * script loaded to do it.
  *
- * `youtube-nocookie.com` sets no cookie until playback starts, and `rel=0`
- * keeps the end screen on this channel rather than offering a competitor's
- * video over the top of ours.
+ * `youtube-nocookie.com` sets no cookie until playback starts.
+ *
+ * The rest of the query string is there to get YouTube's furniture out of the
+ * way, because the point of the dialog is the recording and not the platform:
+ *
+ *   controls=0        no bottom bar, so no progress rail, timecode, captions
+ *                     button, settings gear or fullscreen button. Click still
+ *                     pauses, so this does not strand anybody with a video
+ *                     they cannot stop.
+ *   cc_load_policy=0  captions off unless the viewer asks for them. They were
+ *                     burning in over the recording.
+ *   iv_load_policy=3  no annotation cards.
+ *   modestbranding=1  asks for the logo to be played down.
+ *   rel=0             the end screen stays on this channel rather than
+ *                     offering a competitor's video over the top of ours.
+ *   playsinline=1     iOS plays it in the dialog instead of taking over the
+ *                     screen with its own player, which would undo all of the
+ *                     above.
+ *
+ * What none of this removes: the channel avatar, name and subscriber count
+ * that YouTube draws over the paused and pre-roll states. There is no embed
+ * parameter for it — `showinfo` used to do it and was withdrawn in 2018. The
+ * only way to have the recording with none of this is to serve the file
+ * ourselves and use a plain `<video>`.
  */
 /** The pill, shared by the real trigger and the not-yet one. */
 const PILL =
@@ -195,6 +216,10 @@ export function WatchVideo({ className }: { className?: string }) {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 onLoad={(event) => {
+                  // Nothing to ask for at 1: it is the player's own default,
+                  // and a command that changes nothing is still a command that
+                  // can fail in the console.
+                  if (VIDEO.rate === 1) return;
                   const frame = event.currentTarget;
                   const ask = () =>
                     frame.contentWindow?.postMessage(
@@ -211,7 +236,7 @@ export function WatchVideo({ className }: { className?: string }) {
                     }, delay);
                   }
                 }}
-                src={`https://www.youtube-nocookie.com/embed/${VIDEO.id}?autoplay=1&rel=0&enablejsapi=1`}
+                src={`https://www.youtube-nocookie.com/embed/${VIDEO.id}?autoplay=1&enablejsapi=1&controls=0&cc_load_policy=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`}
                 title={VIDEO.title}
               />
             </div>
