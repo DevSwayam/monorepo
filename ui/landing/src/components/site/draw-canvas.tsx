@@ -24,7 +24,7 @@ import { type Candle, fmtUsd, smoothPath } from "./market-data";
  * able to put a finger on it. So this is the real interaction: drag across the
  * empty half, and then watch the market walk into the line you left.
  *
- * The candles are a simulation, and the chip says so. What matters is that they
+ * The candles are a simulation. What matters is that they
  * move: a still chart asks you to imagine a market, and nobody imagines one. A
  * second per candle is fast enough that the next bar is always nearly here,
  * which is the whole reason it is worth sitting through. Real BTC history seeds
@@ -32,9 +32,19 @@ import { type Candle, fmtUsd, smoothPath } from "./market-data";
  *
  * Deliberately no vocabulary. Nothing here says entry, target, invalidation,
  * leverage or liquidation; see ui/landing/CONTENT.md §4 for the word list this
- * component is written against. The stake and the multiple are fixed and shown
- * as one chip, because a demo that opens with settings is a demo that opens
- * with homework.
+ * component is written against.
+ *
+ * The stake and the multiple are fixed at $100 and 5x and no longer shown. They
+ * were one chip in the header, which is a demo opening with settings you cannot
+ * change; the summary quotes the money at the end, which is the only point at
+ * which either number means anything to a reader.
+ *
+ * Nothing on the widget now says the candles are not market data. The word
+ * "practice" sat beside that chip and went with it. The figures are honest —
+ * `MARGIN` still drives the arithmetic — but the disclosure is gone from the
+ * page, and BTC's real last close seeding the walk is what makes the opening
+ * frame convincing. If it needs saying again, the section heading above has the
+ * room for it.
  *
  * The level rule matches the one in the FAQ, via `levelsFor`: the end of the
  * curve is what you're aiming at, and the furthest it strays the wrong way is
@@ -417,7 +427,7 @@ function PriceTag({ price, y }: { price: number; y: number }) {
       <text
         fill="var(--fg-muted)"
         fontSize="10.5"
-        style={{ fontFamily: "var(--font-mono)" }}
+        style={{ fontFamily: "var(--font-sans)" }}
         textAnchor="middle"
         x={x + w / 2}
         y={top + 12.5}
@@ -728,7 +738,7 @@ export function DrawCanvas({
   const runWidth = (PLOT_R - SPLIT) / RUN_BARS;
 
   return (
-    <div className={cn("flex flex-col gap-3 p-3 md:gap-4 md:p-4", className)}>
+    <div className={cn("relative flex flex-col gap-3 p-3 md:gap-4 md:p-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-2 pt-1">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center gap-1.5 rounded-full bg-surface-3 py-1 pr-3 pl-1.5 font-medium text-foreground text-sm">
@@ -740,14 +750,6 @@ export function DrawCanvas({
           </span>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="rounded-full bg-surface-2 figures px-2.5 py-1 text-fg-muted text-xs">
-            ${MARGIN} · {LEVERAGE}×
-          </span>
-          {/* Honest label, and it stays: these candles are a random walk, and a
-              page that lets one pass for market data is lying. What went is the
-              pulsing green dot that used to sit next to it, which is the
-              universal "live feed" tell and was claiming the opposite. */}
-          <span className="text-fg-subtle text-xs">practice</span>
           <ExpandButton />
         </div>
       </div>
@@ -933,83 +935,97 @@ export function DrawCanvas({
         }))} />}
         {note && <div role="status" className="pointer-events-none absolute top-3 right-3 rounded-xl border border-edge bg-surface-2 px-3 py-2 text-fg-muted text-xs">{note}</div>}
 
-        {/*
-          The end of the trade, held up rather than swept away.
+      </div>
+      {/*
+        The end of the trade, held up rather than swept away.
 
-          It sits over the canvas because the canvas is what it is about, and
-          the chart keeps running behind it — the market does not wait for
-          anyone to finish reading. Drawing again is one button; the other is
-          the only place on the page that asks for anything.
-        */}
-        {phase === "settled" && result ? (
-          <div className="absolute inset-0 grid place-items-center p-4">
-            {/* The scrim. A card this size over moving candles is unreadable
-                without one, and pushing the market back is also what says the
-                trade is over. */}
-            <div
-              aria-hidden="true"
-              className="dc-scrim absolute inset-0 bg-background/72 backdrop-blur-[3px]"
-            />
-            <div
-              aria-live="polite"
-              className="dc-summary surface-raised relative w-full max-w-[21rem] rounded-2xl p-6"
-            >
-              {/* Outcome first, in three words, carrying the colour. */}
-              <Kicker className="flex items-center justify-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-1.5 rounded-full",
-                    result.won ? "bg-[var(--up)]" : "bg-[var(--down)]",
-                  )}
-                />
-                <span
-                  className={
-                    result.won ? "text-[var(--up)]" : "text-[var(--down)]"
-                  }
-                >
-                  {result.liquidated
-                    ? "Liquidated"
-                    : result.won
-                      ? "Profit"
-                      : "Loss"}
-                </span>
-              </Kicker>
+        It sits over the canvas because the canvas is what it is about, and
+        the chart keeps running behind it — the market does not wait for
+        anyone to finish reading. Drawing again is one button; the other is
+        the only place on the page that asks for anything.
 
-              {/* The figure is the point, so nothing else on the card competes
-                  with it for size. */}
-              <p
+        Anchored to the whole widget rather than to the plot box it used to
+        sit inside. The plot is only as tall as the chart's 760x340 viewBox
+        makes it, and on a phone that is 153px against a 230px card: the card
+        overflowed by 93px, the plot box clips its overflow, and both buttons
+        ended up outside it. Not merely cut off — `elementFromPoint` at their
+        centres returned what was behind them, so "Start drawing for real"
+        and "Draw another" could not be tapped at all.
+
+        The shell is the box to measure against, and it is not generous:
+        dropping the stake chip out of the header took it from 273px to 237px
+        in one edit, which left the card a single pixel of clearance. Hence the
+        tighter padding below `sm`. The margin wants to survive the next change
+        to the header, not just this one.
+      */}
+      {phase === "settled" && result ? (
+        <div className="absolute inset-0 z-20 grid place-items-center p-2 sm:p-4">
+          {/* The scrim. A card this size over moving candles is unreadable
+              without one, and pushing the market back is also what says the
+              trade is over. */}
+          <div
+            aria-hidden="true"
+            className="dc-scrim absolute inset-0 bg-background/72 backdrop-blur-[3px]"
+          />
+          <div
+            aria-live="polite"
+            className="dc-summary surface-raised relative w-full max-w-[21rem] rounded-2xl p-4 sm:p-6"
+          >
+            {/* Outcome first, in three words, carrying the colour. */}
+            <Kicker className="flex items-center justify-center gap-2">
+              <span
+                aria-hidden="true"
                 className={cn(
-                  "mt-2 figures text-center text-[2.75rem] leading-none tracking-[-0.03em]",
-                  result.won ? "text-[var(--up)]" : "text-[var(--down)]",
+                  "size-1.5 rounded-full",
+                  result.won ? "bg-[var(--up)]" : "bg-[var(--down)]",
                 )}
+              />
+              <span
+                className={
+                  result.won ? "text-[var(--up)]" : "text-[var(--down)]"
+                }
               >
-                {result.won ? "+" : "−"}${fmtUsd(Math.abs(result.pnl))}
-              </p>
+                {result.liquidated
+                  ? "Liquidated"
+                  : result.won
+                    ? "Profit"
+                    : "Loss"}
+              </span>
+            </Kicker>
 
-              <div className="mt-6 flex flex-col gap-2">
-                <SoonButton
-                  className="pressable h-11 w-full rounded-full bg-primary text-base text-primary-foreground transition-colors duration-micro ease-smooth-out hover:bg-primary/90 sm:h-11 sm:text-base"
-                  detail="Drawing with real money opens with the public testnet."
-                  size="sm"
-                >
-                  Start drawing for real
-                </SoonButton>
-                <button
-                  className="pressable h-9 rounded-full text-fg-muted text-sm transition-colors duration-fast ease-smooth-out hover:text-foreground"
-                  onClick={() => {
-                    setResult(null);
-                    setPhase("live");
-                  }}
-                  type="button"
-                >
-                  Draw another
-                </button>
-              </div>
+            {/* The figure is the point, so nothing else on the card competes
+                with it for size. */}
+            <p
+              className={cn(
+                "mt-2 figures text-center text-[2.25rem] leading-none tracking-[-0.03em] sm:text-[2.75rem]",
+                result.won ? "text-[var(--up)]" : "text-[var(--down)]",
+              )}
+            >
+              {result.won ? "+" : "−"}${fmtUsd(Math.abs(result.pnl))}
+            </p>
+
+            <div className="mt-4 flex flex-col gap-2 sm:mt-6">
+              <SoonButton
+                className="pressable h-11 w-full rounded-full bg-primary text-base text-primary-foreground transition-colors duration-micro ease-smooth-out hover:bg-primary/90 sm:h-11 sm:text-base"
+                detail="Drawing with real money opens with the public testnet."
+                size="sm"
+              >
+                Start drawing for real
+              </SoonButton>
+              <button
+                className="pressable h-9 rounded-full text-fg-muted text-sm transition-colors duration-fast ease-smooth-out hover:text-foreground"
+                onClick={() => {
+                  setResult(null);
+                  setPhase("live");
+                }}
+                type="button"
+              >
+                Draw another
+              </button>
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

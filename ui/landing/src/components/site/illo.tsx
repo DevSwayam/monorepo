@@ -4,6 +4,7 @@ import heroLeft from "../../../public/assets/illo/hero-left.png";
 import heroLeftDark from "../../../public/assets/illo/hero-left-dark.png";
 import heroRightDark from "../../../public/assets/illo/hero-right-dark.png";
 import heroRight from "../../../public/assets/illo/hero-right.png";
+import heroPhone from "../../../public/assets/illo/mobile-hero.png";
 import cta from "../../../public/assets/illo/cta-scene.png";
 import band from "../../../public/assets/illo/band-cast.png";
 import steps from "../../../public/assets/illo/spot-steps.png";
@@ -106,11 +107,21 @@ export function Spot({
 }
 
 /**
- * The hero flanks, running off both edges behind the headline.
+ * The hero art: two flanks on a wide screen, one drawn scene on a phone.
  *
- * Each is weighted away from the centre and nearly empty on its inner third,
- * which is the side the headline sits on. On phones the same art forms a
- * separate row below the copy, so the characters stay large enough to read.
+ * Each flank is weighted away from the centre and nearly empty on its inner
+ * third, which is the side the headline sits on.
+ *
+ * Phones get their own asset rather than a scaled-up flank. The flank is a
+ * half-composition cropped for the edge of a wide page, so filling a phone
+ * with it meant blowing it up to 24rem and sliding it off centre — the
+ * characters came out enormous and the half that was designed to sit under
+ * the headline was the half on screen. `mobile-hero.png` is the whole cast at
+ * a size a phone can hold.
+ *
+ * Both are in the markup and CSS picks one, rather than branching on a media
+ * query in JavaScript: the art is above the fold, and a layout that waits for
+ * hydration to decide what to paint shows the wrong one first.
  */
 export function HeroScene() {
   return (
@@ -118,6 +129,25 @@ export function HeroScene() {
       <IllustrationPalette />
       <Flank slot="heroLeft" side="left" />
       <Flank slot="heroRight" side="right" />
+      {/*
+        The one illustration here that is optimised rather than served raw.
+        The others are small palette PNGs where Next's lossy pass adds fringes
+        that the dark-mode remap then amplifies; this one is a 1402px asset
+        drawn at 320px, and `unoptimized` means no srcset, so the browser was
+        doing the whole 2.19x reduction itself in one step and softening the
+        edges. Sharp resamples it once, properly, at each width in the srcset.
+        `quality` is up at 96 because the art is flat colour with hard edges,
+        which is exactly what a default-quality encode smears.
+      */}
+      <Image
+        alt=""
+        className={cn(styles.image, styles.legacyImage, styles.phoneArt)}
+        fetchPriority="high"
+        loading="eager"
+        quality={96}
+        sizes="20rem"
+        src={heroPhone}
+      />
     </div>
   );
 }

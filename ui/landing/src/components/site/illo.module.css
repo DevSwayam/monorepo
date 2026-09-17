@@ -102,8 +102,32 @@
 .right .accentDash { right: 31%; top: 90%; }
 :global(.dark) .accentSquare { background: #454039; }
 
+/* Only ever one of the two: the phone scene, or the pair of flanks. */
+.phoneArt { display: none; }
+
 @media (max-width: 47.999rem) {
-  .scene { position: relative; inset: auto; flex-shrink: 0; width: 100%; height: 15rem; }
-  .scene .right { display: none; }
-  .scene .left { top: -2rem; bottom: auto; left: 50%; width: 24rem; transform: translateX(-35%); }
+  .scene { position: relative; inset: auto; flex-shrink: 0; width: 100%; height: auto; }
+  .scene .left, .scene .right { display: none; }
+  /*
+     The asset carries a wide transparent margin, about a fifth of its height
+     top and bottom, so a plain `height: auto` reserves a band of empty space
+     above and below the characters. The negative block margin takes that back,
+     which is why the art can be this modest without leaving a hole under the
+     headline.
+  */
+  .phoneArt {
+    display: block;
+    width: 100%;
+    max-width: 20rem;
+    height: auto;
+    /*
+       Trimmed unevenly on purpose. The negative top reclaims the asset's blank
+       band so the art is not floating below the nav, and the bottom is left
+       shallower than the band it is cancelling: the stage only puts 0.5rem
+       between this and the headline, and trimming the full band closed that to
+       nothing — the cap-height of "Draw the chart." came up level with the
+       lowest character.
+    */
+    margin: -2.5rem auto -1.5rem;
+  }
 }

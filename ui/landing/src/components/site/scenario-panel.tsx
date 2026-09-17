@@ -39,16 +39,13 @@ export function ScenarioPanel() {
       <ScenarioChart scenario={scenario} step={shown} />
       <div className={styles.controls}>
         <div className={styles.legend}><span><i className={styles.blue} />Your drawn path</span><span><i />Bitcoin price</span></div>
-        <div className={styles.playback}>
-          <p className={styles.context}>$100 · 5× leverage · Demo</p>
-          {!reduced && <button className={styles.button} type="button" aria-label={done ? "Replay the walkthrough" : paused ? "Play the walkthrough" : "Pause the walkthrough"} onClick={() => {
+        {!reduced && <button className={styles.button} type="button" aria-label={done ? "Replay the walkthrough" : paused ? "Play the walkthrough" : "Pause the walkthrough"} onClick={() => {
             if (done) { elapsed.current = 0; setStep(0); setPaused(true); requestAnimationFrame(() => setPaused(false)); }
             else setPaused(value => !value);
           }}>
             {done ? <RotateCcwIcon aria-hidden="true" /> : paused ? <PlayIcon aria-hidden="true" /> : <PauseIcon aria-hidden="true" />}
             {done ? "Replay" : paused ? "Play" : "Pause"}
           </button>}
-        </div>
       </div>
     </div>
   );
