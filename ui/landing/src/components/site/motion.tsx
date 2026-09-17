@@ -95,7 +95,20 @@ export function useReducedMotion() {
  * Unlike `Reveal`, this keeps watching, it reports leaving as well as
  * arriving.
  */
-export function useInView<T extends HTMLElement>(threshold: number) {
+export function useInView<T extends HTMLElement>(
+  threshold: number,
+  /**
+   * Shrinks the box the element is tested against, so "on screen" can mean
+   * "actually being looked at" rather than "one edge has appeared".
+   *
+   * A threshold alone is a fraction of the *element*, which is the wrong ruler
+   * for anything tall: a walkthrough 290px high on a phone cleared 0.15 with
+   * 44px showing, so it played and finished while still under the fold. Margins
+   * are a fraction of the viewport, so they hold regardless of how big the
+   * thing being watched is.
+   */
+  rootMargin?: string,
+) {
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -105,10 +118,10 @@ export function useInView<T extends HTMLElement>(threshold: number) {
     }
     const io = new IntersectionObserver(
       ([entry]) => setInView(entry.isIntersecting),
-      { threshold },
+      { threshold, rootMargin },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [threshold]);
+  }, [threshold, rootMargin]);
   return [ref, inView] as const;
 }

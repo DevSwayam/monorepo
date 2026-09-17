@@ -15,7 +15,15 @@ export function ScenarioPanel() {
   const [paused, setPaused] = useState(false);
   const elapsed = useRef(0);
   const reduced = useReducedMotion();
-  const [ref, inView] = useInView<HTMLDivElement>(0.15);
+  /*
+   * Held until the panel reaches the middle of the screen, not the bottom edge
+   * of it. The run is 4.4s and it used to start on 15% of the block being
+   * visible, which on a phone is about 44px — so on the way down the whole
+   * thing had played out before it was properly in front of anybody, and what
+   * you arrived at was a finished chart. Trimming a fifth off the top of the
+   * root and a quarter off the bottom means it waits its turn.
+   */
+  const [ref, inView] = useInView<HTMLDivElement>(0, "-20% 0px -25% 0px");
 
   useEffect(() => {
     if (reduced || paused || !inView) return;
