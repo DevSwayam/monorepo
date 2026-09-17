@@ -1,3 +1,4 @@
+import { ArrowDownIcon } from "lucide-react";
 import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
 import { Expandable } from "./expandable";
@@ -6,6 +7,7 @@ import styles from "./hero.module.css";
 import { HeroScene } from "./illo";
 import { Reveal } from "./motion";
 import { Body, Display, Heading } from "./type";
+import { VIDEO } from "./video";
 import { WatchVideo } from "./video-dialog";
 
 /**
@@ -59,22 +61,44 @@ export async function Hero() {
           </Reveal>
 
           <Reveal index={3}>
-            <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               {/*
-                Stacked and width-matched. Side by side they were a pair of
-                different-length pills that read as one wide bar, and the
-                secondary was competing with the primary for the same glance;
-                one under the other puts them in order of what we want pressed
-                first.
+                Stacked and width-matched on a phone, side by side from `sm`.
+                On a narrow screen a row of two pills wraps into a column of
+                two different widths, which reads as a mistake rather than a
+                pair; matching them and stacking deliberately fixes that. There
+                is room for the row on a laptop, so it keeps it.
               */}
               <a
-                className="pressable inline-flex min-h-12 w-full max-w-[14rem] items-center justify-center gap-2.5 rounded-full bg-primary px-6 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand"
+                className="pressable inline-flex min-h-12 w-full max-w-[14rem] items-center justify-center gap-2.5 rounded-full bg-primary px-6 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none"
                 href="#try"
               >
                 <DrawGlyph className="size-5" />
                 Try drawing
               </a>
-              <WatchVideo />
+              {/*
+                The walkthrough once there is one to watch, and the waitlist
+                until then. An empty `VIDEO.id` builds a valid embed URL with no
+                video behind it, so the button would open a black frame with
+                YouTube's error in it — worse than not offering it. Setting the
+                id is the whole switch.
+
+                This reads `VIDEO` from `./video` rather than from the dialog
+                itself, which is a client module: a server component gets a
+                client *reference* for those exports, not the value, so the test
+                below was always falsy when the constant lived there.
+              */}
+              {VIDEO.id ? (
+                <WatchVideo />
+              ) : (
+                <a
+                  className="pressable inline-flex min-h-12 w-full max-w-[14rem] items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none"
+                  href="#start"
+                >
+                  Join waitlist
+                  <ArrowDownIcon aria-hidden="true" className="size-4" />
+                </a>
+              )}
             </div>
           </Reveal>
         </div>
