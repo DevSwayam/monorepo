@@ -923,11 +923,15 @@ export function DrawCanvas({
           is 70 viewBox units, which is 31px at phone width and narrower than
           the number itself. The chip's own fill is what keeps it readable over
           the grid.
+
+          It follows the last price, and once it did not: while a line was drawn
+          it held the entry instead, so both the number and its height froze the
+          moment a trade started and stayed put for the whole run — the one
+          stretch where the figure is worth watching. The dashed rule it used to
+          label is still drawn at the entry, and the tag leaving it is the point.
+          The gap between the two is the trade.
         */}
-        <PriceTag
-          price={hasLine ? entry : price}
-          y={sc.y(hasLine ? entry : price)}
-        />
+        <PriceTag price={price} y={sc.y(price)} />
 
         {phase === "running" && run.length > 0 && <CandlePnl candles={run.map((bar, index) => ({
           x: (SPLIT + (index + 0.5) * runWidth) / W * 100,
