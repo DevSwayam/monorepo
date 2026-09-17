@@ -784,15 +784,27 @@ export function DrawCanvas({
             y={PLOT_T}
           />
 
-          {/* Where you get in. Always on, because it is always true. */}
+          {/*
+            Where the price is now, carried across to the tag on the right.
+
+            It used to sit at the entry once a trade started, which left the tag
+            floating in the gutter attached to nothing: the rule was at one
+            height and the figure for that rule at another. A rule and its label
+            have to agree, and of the two heights the live one is the one worth
+            drawing — it is the edge the candles are arriving at.
+
+            Nothing is lost by moving it. The entry is still marked, by the
+            start of the line you drew, which is where you got in by
+            definition.
+          */}
           <line
             stroke="var(--fg-subtle)"
             strokeDasharray="3 4"
             strokeOpacity="0.35"
             x1={PLOT_L}
             x2={PLOT_R}
-            y1={sc.y(hasLine ? entry : price)}
-            y2={sc.y(hasLine ? entry : price)}
+            y1={sc.y(price)}
+            y2={sc.y(price)}
           />
 
           {/* history */}
