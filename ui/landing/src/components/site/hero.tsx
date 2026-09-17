@@ -3,11 +3,10 @@ import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
 import { Expandable } from "./expandable";
 import { GradientCard } from "./gradient-card";
-import { HeadlineMix } from "./headline-mix";
 import styles from "./hero.module.css";
 import { HeroScene } from "./illo";
 import { Reveal } from "./motion";
-import { Body, Heading } from "./type";
+import { Body, Display, Heading } from "./type";
 
 /** A full-width illustrated introduction, followed by the live practice chart. */
 export async function Hero() {
@@ -20,7 +19,10 @@ export async function Hero() {
 
         <div className={styles.content}>
           <Reveal index={1}>
-            <HeadlineMix />
+            <Display id="hero-title">
+              <span className="block">Draw the chart.</span>
+              <span className="block">Trade the line.</span>
+            </Display>
           </Reveal>
 
           <Reveal index={2}>
@@ -58,7 +60,6 @@ export async function Hero() {
       >
         <Reveal className={styles.practiceHeading}>
           <Heading id="try-title">Your turn. Draw a trade.</Heading>
-          <Body>A practice chart. No wallet needed.</Body>
         </Reveal>
         <Reveal index={1}>
           <Expandable label="the chart">

@@ -34,7 +34,7 @@ export function CandlePnl({ candles }: { candles: CandleValue[] }) {
       <div
         className={styles.value}
         data-active-candle={index}
-        style={{ left: `clamp(3.5rem, ${current.x}%, calc(100% - 3.5rem))`, top: `max(4px, calc(${current.y}% - 34px))` }}
+        style={{ left: `clamp(2rem, ${current.x}%, calc(100% - 2rem))`, top: `max(2px, calc(${current.y}% - 26px))` }}
       >
         <strong style={{ color: Math.abs(current.pnl) < 0.005 ? "var(--fg-muted)" : current.pnl > 0 ? "var(--up)" : "var(--down)" }}>{money(current.pnl)}</strong>
       </div>

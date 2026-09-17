@@ -9,13 +9,6 @@ import { WorkedExample } from "@/components/site/worked-example";
 import { SiteNav } from "@/components/site/nav";
 import { StoryStack } from "@/components/site/story-stack";
 
-/**
- * Rendered per request rather than at build time, so the headline picks a new
- * pair of pixel words on every refresh. Everything else on the page is static
- * content, so the only cost is the render itself.
- */
-export const dynamic = "force-dynamic";
-
 export default function HomePage() {
   return (
     <>
