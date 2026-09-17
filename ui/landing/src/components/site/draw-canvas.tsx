@@ -417,7 +417,7 @@ function PriceTag({ price, y }: { price: number; y: number }) {
   const top = Math.min(PLOT_B - 12, Math.max(PLOT_T + 12, y));
   return (
     <span
-      className="pointer-events-none absolute -translate-y-1/2 rounded-full bg-surface-3 px-2.5 py-1 text-foreground text-sm tabular-nums shadow-[0_1px_6px_var(--bg)] sm:text-base"
+      className="pointer-events-none absolute -translate-y-1/2 rounded-full bg-surface-3 px-4 py-1 text-foreground text-sm tabular-nums shadow-[0_1px_6px_var(--bg)] sm:text-base"
       style={{ right: `${(4 / W) * 100}%`, top: `${(top / H) * 100}%` }}
     >
       {fmtUsd(price)}

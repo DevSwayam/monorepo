@@ -162,10 +162,35 @@ export function WatchVideo({ className }: { className?: string }) {
               </button>
             </div>
             <div className={styles.frame}>
+              {/*
+                `setPlaybackRate` is sent rather than set in the URL, because
+                YouTube has no parameter for it. The command is repeated a few
+                times because the player answers `postMessage` only once its own
+                script is up, and there is no load event for that — `onLoad`
+                fires when the frame's document arrives, which is earlier. The
+                retries stop as soon as the dialog closes.
+              */}
               <iframe
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
-                src={`https://www.youtube-nocookie.com/embed/${VIDEO.id}?autoplay=1&rel=0`}
+                onLoad={(event) => {
+                  const frame = event.currentTarget;
+                  const ask = () =>
+                    frame.contentWindow?.postMessage(
+                      JSON.stringify({
+                        event: "command",
+                        func: "setPlaybackRate",
+                        args: [VIDEO.rate],
+                      }),
+                      "*",
+                    );
+                  for (const delay of [0, 400, 1200, 2500]) {
+                    setTimeout(() => {
+                      if (frame.isConnected) ask();
+                    }, delay);
+                  }
+                }}
+                src={`https://www.youtube-nocookie.com/embed/${VIDEO.id}?autoplay=1&rel=0&enablejsapi=1`}
                 title={VIDEO.title}
               />
             </div>
