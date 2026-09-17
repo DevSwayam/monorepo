@@ -1,8 +1,22 @@
 /*
  * The player's own box. A modal dialog fills the viewport, so the stage inside
  * it is what gets centred and sized, not the dialog itself.
+ *
+ * Everything that makes it fill the screen is scoped to `:modal`, and that
+ * scoping is the whole point rather than tidiness. The first version set
+ * `display: block` and `100vw`/`100dvh` on `.panel` flat, which overrode the
+ * `display: none` a closed `<dialog>` gets from the browser — so an invisible
+ * element the size of the viewport sat over the page and ate every click on it,
+ * including the two buttons in the hero that open this and the chart. The
+ * closed state has no styles at all here: `display: none` is correct and it is
+ * already the default.
+ *
+ * Worth knowing how it got through: `element.click()` dispatches straight at a
+ * node and never hit-tests, so a test that clicks that way passes against a
+ * page no human can use. The check that catches it is `elementFromPoint` at the
+ * control's centre, or a real `Input.dispatchMouseEvent`.
  */
-.panel {
+.panel:modal {
   display: block;
   inset: 0;
   width: 100vw;
@@ -19,7 +33,7 @@
 
 /* Light enough that the page is still legible behind it, blurred so it reads
    as set aside rather than switched off. */
-.panel::backdrop {
+.panel:modal::backdrop {
   background: rgb(18 17 16 / 55%);
   backdrop-filter: blur(8px);
 }
