@@ -1,4 +1,3 @@
-import { ArrowDownIcon } from "lucide-react";
 import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
 import { Expandable } from "./expandable";
@@ -7,7 +6,6 @@ import styles from "./hero.module.css";
 import { HeroScene } from "./illo";
 import { Reveal } from "./motion";
 import { Body, Display, Heading } from "./type";
-import { VIDEO } from "./video";
 import { WatchVideo } from "./video-dialog";
 
 /**
@@ -76,29 +74,7 @@ export async function Hero() {
                 <DrawGlyph className="size-5" />
                 Try drawing
               </a>
-              {/*
-                The walkthrough once there is one to watch, and the waitlist
-                until then. An empty `VIDEO.id` builds a valid embed URL with no
-                video behind it, so the button would open a black frame with
-                YouTube's error in it — worse than not offering it. Setting the
-                id is the whole switch.
-
-                This reads `VIDEO` from `./video` rather than from the dialog
-                itself, which is a client module: a server component gets a
-                client *reference* for those exports, not the value, so the test
-                below was always falsy when the constant lived there.
-              */}
-              {VIDEO.id ? (
-                <WatchVideo />
-              ) : (
-                <a
-                  className="pressable inline-flex min-h-12 w-full max-w-[14rem] items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none"
-                  href="#start"
-                >
-                  Join waitlist
-                  <ArrowDownIcon aria-hidden="true" className="size-4" />
-                </a>
-              )}
+              <WatchVideo />
             </div>
           </Reveal>
         </div>
