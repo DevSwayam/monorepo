@@ -9,12 +9,8 @@
  * sit outside the client boundary.
  */
 export const VIDEO = {
-  /**
-   * The YouTube video id — the part after `v=`, not the whole URL.
-   *
-   * TODO: fill this in. While it is empty the player opens to an empty frame.
-   */
-  id: "",
+  /** The YouTube video id — the part after `v=`, not the whole URL. */
+  id: "4_SpI84ztHw",
   /** Names the dialog for screen readers, and titles the player. */
   title: "How skech works",
   /**
@@ -24,4 +20,13 @@ export const VIDEO = {
    * is a second network dependency for one short string.
    */
   duration: "",
+  /**
+   * Played a little faster than recorded.
+   *
+   * There is no URL parameter for playback rate, so this is sent to the player
+   * over `postMessage` once it is up, which is why the embed asks for
+   * `enablejsapi`. Best effort by nature: it is a cross-origin frame, so
+   * nothing here can read back whether it took.
+   */
+  rate: 1.25,
 } as const;

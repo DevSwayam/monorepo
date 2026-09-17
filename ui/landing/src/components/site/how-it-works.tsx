@@ -17,7 +17,7 @@ const STEPS: {
   },
   {
     title: "Set leverage",
-    caption: "Put in $100, trade like $500.",
+    caption: "Put in $100, trade like $1,000.",
     visual: <Leverage />,
   },
   {
@@ -90,11 +90,18 @@ function Amount() {
 function Leverage() {
   return (
     <div className="flex w-full flex-col justify-center gap-5">
-      <div className="grid h-4 auto-cols-fr grid-flow-col gap-1.5">
-        {Array.from({ length: 10 }, (_, i) => (
+      {/*
+        Fifteen notches with ten lit. The meter used to be ten with five lit,
+        which reads as halfway up a scale that stops at ten — so the card was
+        quietly saying the most you can do is double, while the figure beside it
+        said five times. Fifteen is the top of the range and ten is a setting
+        inside it, which is what a meter is for.
+      */}
+      <div className="grid h-4 auto-cols-fr grid-flow-col gap-1">
+        {Array.from({ length: 15 }, (_, i) => (
           <span
             className={
-              i < 5
+              i < 10
                 ? "rounded-full bg-brand"
                 : "rounded-full bg-surface-3 transition-colors duration-slow ease-smooth-out group-hover:bg-brand/25"
             }
@@ -105,7 +112,7 @@ function Leverage() {
       </div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <Body as="span" tone="subtle">trading with</Body>
-        <span className="figures text-3xl text-brand">$500</span>
+        <span className="figures text-3xl text-brand">$1,000</span>
       </div>
     </div>
   );
