@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { announceSoon } from "./soon";
 import styles from "./video-dialog.module.css";
 import { VIDEO } from "./video";
 
@@ -37,6 +38,10 @@ function PlayGlyph({ className }: { className?: string }) {
  * keeps the end screen on this channel rather than offering a competitor's
  * video over the top of ours.
  */
+/** The pill, shared by the real trigger and the not-yet one. */
+const PILL =
+  "pressable inline-flex min-h-12 w-full max-w-[14rem] cursor-pointer items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none";
+
 export function WatchVideo({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -68,16 +73,32 @@ export function WatchVideo({ className }: { className?: string }) {
     };
   }, [open]);
 
+  /*
+   * No id, no player. An empty id still builds a valid embed URL, so opening
+   * the dialog would show a black frame with YouTube's error in it. The button
+   * stays where it is and says the thing is not ready instead — the same
+   * honesty the rest of the page uses for anything unbuilt, and the same toast.
+   */
+  if (!VIDEO.id) {
+    return (
+      <button
+        className={cn(PILL, className)}
+        onClick={() =>
+          announceSoon("The walkthrough is being filmed. It lands here first.")
+        }
+        type="button"
+      >
+        <PlayGlyph className="h-3.5 w-3" />
+        Watch the video
+      </button>
+    );
+  }
+
   return (
     <>
       <button
         aria-haspopup="dialog"
-        className={cn(
-          // Full width inside the hero's column on a phone, content width
-          // once that column becomes a row at `sm`.
-          "pressable inline-flex min-h-12 w-full max-w-[14rem] cursor-pointer items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none",
-          className,
-        )}
+        className={cn(PILL, className)}
         onClick={play}
         ref={trigger}
         type="button"

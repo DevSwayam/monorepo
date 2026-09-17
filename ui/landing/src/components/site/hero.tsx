@@ -1,6 +1,6 @@
 import { getBtcMarket } from "./btc";
 import { DrawCanvas } from "./draw-canvas";
-import { Expandable } from "./expandable";
+import { Expandable, ExpandTrigger } from "./expandable";
 import { GradientCard } from "./gradient-card";
 import styles from "./hero.module.css";
 import { HeroScene } from "./illo";
@@ -67,13 +67,21 @@ export async function Hero() {
                 pair; matching them and stacking deliberately fixes that. There
                 is room for the row on a laptop, so it keeps it.
               */}
-              <a
+              {/*
+                Opens the chart full screen rather than scrolling to it. The
+                canvas is the product, and a hero button that merely moves the
+                page down to a 153px-tall chart on a phone is asking someone to
+                draw in a letterbox. `href` is kept so the press still scrolls
+                if it lands before hydration.
+              */}
+              <ExpandTrigger
                 className="pressable inline-flex min-h-12 w-full max-w-[14rem] items-center justify-center gap-2.5 rounded-full bg-primary px-6 font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none"
                 href="#try"
+                label="the chart"
               >
                 <DrawGlyph className="size-5" />
                 Try drawing
-              </a>
+              </ExpandTrigger>
               <WatchVideo />
             </div>
           </Reveal>
