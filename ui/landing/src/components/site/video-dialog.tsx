@@ -216,6 +216,10 @@ export function WatchVideo({ className }: { className?: string }) {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 onLoad={(event) => {
+                  // Nothing to ask for at 1: it is the player's own default,
+                  // and a command that changes nothing is still a command that
+                  // can fail in the console.
+                  if (VIDEO.rate === 1) return;
                   const frame = event.currentTarget;
                   const ask = () =>
                     frame.contentWindow?.postMessage(

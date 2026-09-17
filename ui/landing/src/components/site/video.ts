@@ -21,12 +21,18 @@ export const VIDEO = {
    */
   duration: "",
   /**
-   * Played a little faster than recorded.
+   * Playback rate. 1 is as recorded.
    *
-   * There is no URL parameter for playback rate, so this is sent to the player
-   * over `postMessage` once it is up, which is why the embed asks for
-   * `enablejsapi`. Best effort by nature: it is a cross-origin frame, so
-   * nothing here can read back whether it took.
+   * 1.25 was too quick to follow, and the step below it is not 1.1: YouTube's
+   * player only accepts the rates in its own list — 0.25, 0.5, 0.75, 1, 1.25,
+   * 1.5, 1.75, 2 — and `setPlaybackRate` silently ignores anything else, so
+   * asking for 1.1 would have left it running at 1.25 with nothing to show
+   * why. 1 is the next one down.
+   *
+   * There is no URL parameter for rate either, so anything other than 1 is
+   * sent to the player over `postMessage` once it is up, which is what the
+   * embed's `enablejsapi` is for. Best effort by nature: it is a cross-origin
+   * frame, so nothing here can read back whether it took.
    */
-  rate: 1.25,
+  rate: 1,
 } as const;
