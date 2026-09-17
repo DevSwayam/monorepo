@@ -73,7 +73,9 @@ export function WatchVideo({ className }: { className?: string }) {
       <button
         aria-haspopup="dialog"
         className={cn(
-          "pressable inline-flex min-h-12 w-full max-w-[14rem] cursor-pointer items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand",
+          // Full width inside the hero's column on a phone, content width
+          // once that column becomes a row at `sm`.
+          "pressable inline-flex min-h-12 w-full max-w-[14rem] cursor-pointer items-center justify-center gap-2.5 rounded-full bg-secondary px-6 font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand sm:w-auto sm:max-w-none",
           className,
         )}
         onClick={play}
