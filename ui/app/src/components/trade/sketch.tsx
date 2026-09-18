@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-  IChartApi,
-  ISeriesApi,
-  Logical,
-  SeriesType,
-} from "lightweight-charts";
+import type { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import type { Palette } from "./theme";
 import {
@@ -54,13 +49,50 @@ const MIN_STEP_PX = 2;
 /** How near a turn you have to press to grab it, in pixels. */
 const GRAB_PX = 12;
 
-/** Where the axis is anchored: bar zero, and how long a bar is. */
-type Axis = { now: number; firstTime: number; barSeconds: number };
+/**
+ * The time axis, ours rather than the library's.
+ *
+ * Everything drawn here lives past the last candle, and the chart has no
+ * reliable answer out there. `logicalToCoordinate` folds back towards the left
+ * edge for an index the series does not have — which is how five entry markers
+ * ended up stacked against the side of the chart with their labels clipped to a
+ * single letter, while the ink they belonged to sat correctly two thirds of the
+ * way across — and `timeToCoordinate` answers as though the right offset were
+ * not there.
+ *
+ * So Draw does not ask. It pins the time scale instead: the bar spacing is set
+ * to the pane divided by every bar there is to show, the right offset to the
+ * horizon, and scrolling and scaling are turned off. With the axis nailed down,
+ * where a second falls is arithmetic — and the pen and the painter run the same
+ * arithmetic, which is what actually matters.
+ *
+ * Pinning it is not a compromise. A surface you draw on that slides under your
+ * hand is a surface you cannot draw on.
+ */
+type Axis = {
+  /** Bar length in seconds. */
+  barSeconds: number;
+  /** Candles on the chart. */
+  bars: number;
+  /** Empty bars of future reserved past the last candle. */
+  future: number;
+  /** The pane, in pixels. */
+  width: number;
+};
 
-const logicalOf = (t: number, a: Axis) =>
-  (a.now + t - a.firstTime) / a.barSeconds;
-const tOfLogical = (logical: number, a: Axis) =>
-  a.firstTime + logical * a.barSeconds - a.now;
+function axisMap(a: Axis) {
+  const total = a.bars + a.future;
+  if (a.width <= 0 || total <= 0 || a.barSeconds <= 0) return null;
+  const perBar = a.width / total;
+  // The last candle sits exactly `future` bars in from the right edge, which is
+  // what `rightOffset` means and what the chart was told to do.
+  const xNow = a.width - a.future * perBar;
+  const perSecond = perBar / a.barSeconds;
+  return {
+    tOfX: (x: number) => (x - xNow) / perSecond,
+    xOfT: (t: number) => xNow + t * perSecond,
+  };
+}
 
 export function Sketch({
   chart,
@@ -71,9 +103,9 @@ export function Sketch({
   ghost,
   onGhost,
   plan,
-  now,
+  bars,
+  future,
   barSeconds,
-  firstTime,
   horizon,
   columnSeconds,
 }: {
@@ -86,12 +118,12 @@ export function Sketch({
   ghost: Stroke[];
   onGhost: (next: Stroke[]) => void;
   plan: Plan | null;
-  /** Epoch seconds the horizon is measured from. */
-  now: number;
-  /** Bar length in seconds. One bar is one logical step. */
+  /** Candles on the chart. */
+  bars: number;
+  /** Empty bars of future past the last candle. */
+  future: number;
+  /** Bar length in seconds. */
   barSeconds: number;
-  /** Epoch seconds of the first bar, which is logical index 0. */
-  firstTime: number;
   /** Seconds of future that can be drawn on. */
   horizon: number;
   /** One column of the plan, in seconds. A turn cannot be dragged inside one. */
@@ -110,12 +142,13 @@ export function Sketch({
   /** The polylines under the drag. Mutated in place, copied out to React. */
   const polys = useRef<Stroke[]>([]);
 
-  const axis: Axis = { barSeconds, firstTime, now };
+  /** The pane, as the painter last measured it. The pen reads the same box. */
+  const paneWidth = () => canvas.current?.getBoundingClientRect().width ?? 0;
+  const axis = (): Axis => ({ barSeconds, bars, future, width: paneWidth() });
 
   /* ---- painting ----------------------------------------------------------- */
 
   useEffect(() => {
-    const a: Axis = { barSeconds, firstTime, now };
     let frame = 0;
 
     const paint = () => {
@@ -142,13 +175,12 @@ export function Sketch({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, pane.width, pane.height);
 
-      const scale = api.timeScale();
-      const xOf = (t: number) =>
-        scale.logicalToCoordinate(logicalOf(t, a) as Logical);
+      const map = axisMap({ barSeconds, bars, future, width: pane.width });
+      if (!map) return;
+      const xOf = map.xOfT;
       const at = (q: Point) => {
-        const x = xOf(q.t);
         const y = line.priceToCoordinate(q.p);
-        return x === null || y === null ? null : { x, y };
+        return y === null ? null : { x: xOf(q.t), y };
       };
 
       ctx.lineCap = "round";
@@ -158,7 +190,7 @@ export function Sketch({
       /* ---- 0. now, and the canvas past it --------------------------------- */
 
       const edge = xOf(0);
-      if (edge !== null) {
+      {
         ctx.fillStyle = colours.surface2;
         ctx.globalAlpha = 0.55;
         ctx.fillRect(edge, 0, pane.width - edge, pane.height);
@@ -181,7 +213,7 @@ export function Sketch({
         for (const flat of compiled.flats) {
           const xa = xOf(flat.t0);
           const xb = xOf(flat.t1);
-          if (xa === null || xb === null || xb - xa < 1) continue;
+          if (xb - xa < 1) continue;
           ctx.save();
           ctx.beginPath();
           ctx.rect(xa, 0, xb - xa, pane.height);
@@ -475,11 +507,11 @@ export function Sketch({
     };
   }, [
     barSeconds,
+    bars,
     chart,
-    firstTime,
+    future,
     ghost,
     held,
-    now,
     palette,
     penDown,
     plan,
@@ -492,28 +524,24 @@ export function Sketch({
   const point = (event: React.PointerEvent): Point | null => {
     const el = canvas.current;
     const linear = series.current;
-    const scale = chart.current?.timeScale();
-    if (!el || !linear || !scale) return null;
+    if (!el || !linear) return null;
     const rect = el.getBoundingClientRect();
-    const logical = scale.coordinateToLogical(event.clientX - rect.left);
+    const map = axisMap(axis());
     const p = linear.coordinateToPrice(event.clientY - rect.top);
-    if (logical === null || p === null) return null;
+    if (!map || p === null) return null;
     // Only the future is drawable. The past already happened, and a line over it
     // would be a plan for a fill you cannot get.
     return {
       p: Number(p),
-      t: Math.min(Math.max(tOfLogical(logical, axis), 0), horizon),
+      t: Math.min(Math.max(map.tOfX(event.clientX - rect.left), 0), horizon),
     };
   };
 
   /** Two times less than a couple of pixels apart. */
   const samePixel = (a: number, b: number) => {
-    const scale = chart.current?.timeScale();
-    if (!scale) return false;
-    const xa = scale.logicalToCoordinate(logicalOf(a, axis) as Logical);
-    const xb = scale.logicalToCoordinate(logicalOf(b, axis) as Logical);
-    if (xa === null || xb === null) return false;
-    return Math.abs(xa - xb) < MIN_STEP_PX;
+    const map = axisMap(axis());
+    if (!map) return false;
+    return Math.abs(map.xOfT(a) - map.xOfT(b)) < MIN_STEP_PX;
   };
 
   /**
@@ -525,19 +553,19 @@ export function Sketch({
   const grabbed = (event: React.PointerEvent) => {
     const el = canvas.current;
     const linear = series.current;
-    const scale = chart.current?.timeScale();
-    if (!el || !linear || !scale || !plan) return null;
+    if (!el || !linear || !plan) return null;
     const rect = el.getBoundingClientRect();
+    const map = axisMap(axis());
+    if (!map) return null;
     const px = event.clientX - rect.left;
     const py = event.clientY - rect.top;
     let best: { gi: number; vi: number; d: number } | null = null;
     const groups = polys.current.length ? polys.current : polylines(plan);
     for (const [gi, poly] of groups.entries()) {
       for (const [vi, v] of poly.entries()) {
-        const x = scale.logicalToCoordinate(logicalOf(v.t, axis) as Logical);
         const y = linear.priceToCoordinate(v.p);
-        if (x === null || y === null) continue;
-        const d = Math.hypot(x - px, y - py);
+        if (y === null) continue;
+        const d = Math.hypot(map.xOfT(v.t) - px, y - py);
         if (d < GRAB_PX && (!best || d < best.d)) best = { d, gi, vi };
       }
     }

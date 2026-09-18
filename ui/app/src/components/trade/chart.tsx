@@ -646,6 +646,20 @@ export function PriceChart({
         ? { barSpacing: width / bars }
         : {}),
     });
+    /**
+     * Draw does not pan or zoom.
+     *
+     * Partly because a surface you draw on that slides under your hand is a
+     * surface you cannot draw on. Mostly because the drawing layer works out
+     * where a second falls by arithmetic — the pane over the bars, the last
+     * candle a horizon in from the right — rather than by asking the chart,
+     * which has no honest answer past its last bar. Pinning the scale is what
+     * makes that arithmetic true.
+     */
+    instance.applyOptions({
+      handleScale: future === 0,
+      handleScroll: future === 0,
+    });
   }, [data.length, future]);
 
   useEffect(() => {
@@ -822,12 +836,10 @@ export function PriceChart({
     target.addEventListener("pointercancel", end);
   };
 
-  /* The sketch needs one fixed point on each axis and the spacing between
-     bars; from those, any second maps to a pixel. */
+  /* How long a bar is. The sketch works out the rest of the axis from the bar
+     count and the pane, because in Draw the time scale is pinned. */
   const barSeconds =
     candles.length > 1 ? seconds(candles[1].t) - seconds(candles[0].t) : 60;
-  const firstTime = candles.length ? seconds(candles[0].t) : 0;
-  const nowTime = candles.length ? seconds(candles[candles.length - 1].t) : 0;
 
   return (
     <div className={cn("relative h-full w-full", className)} data-bars={`${data.length}/${future}`}>
@@ -836,12 +848,12 @@ export function PriceChart({
       {sketch ? (
         <Sketch
           barSeconds={barSeconds}
+          bars={candles.length}
           chart={chart}
           columnSeconds={sketch.columnSeconds}
-          firstTime={firstTime}
+          future={future}
           ghost={sketch.ghost}
           horizon={sketch.horizon}
-          now={nowTime}
           onGhost={sketch.onGhost}
           onStrokes={sketch.onStrokes}
           palette={palette}
