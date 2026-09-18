@@ -26,6 +26,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import { cn } from "@/lib/utils";
+import { Sketch } from "./sketch";
+import type { Plan, Stroke } from "./trace";
 import {
   bollinger,
   ema,
@@ -88,6 +90,20 @@ export type Level = {
   onChange?: (price: number) => void;
 };
 
+/** Everything the drawing surface needs that only the chart knows. */
+export type SketchProps = {
+  strokes: Stroke[];
+  onStrokes: (next: Stroke[]) => void;
+  /** The hand as first drawn, kept behind once the plan is edited by its turns. */
+  ghost: Stroke[];
+  onGhost: (next: Stroke[]) => void;
+  plan: Plan | null;
+  /** Seconds of future the pen may use. */
+  horizon: number;
+  /** One column of the plan, in seconds. */
+  columnSeconds: number;
+};
+
 /** The moving averages, and the colours they are drawn in. */
 const MA = [
   { period: 7, tone: "brand" as const },
@@ -111,6 +127,9 @@ const seconds = (ms: number) => Math.floor(ms / 1000) as UTCTimestamp;
 
 export function PriceChart({
   candles,
+  live,
+  future = 0,
+  sketch,
   kind,
   overlays,
   studies,
@@ -122,6 +141,18 @@ export function PriceChart({
   className,
 }: {
   candles: Candle[];
+  /**
+   * The bar still forming, applied over the last of `candles`.
+   *
+   * Separate from the array on purpose: `candles` rebuilds every series on the
+   * chart when it changes, and a bar that ticks four times a second cannot be
+   * doing that. This goes through `update`, which touches one bar.
+   */
+  live?: Candle | null;
+  /** Empty bars past the last one, so there is a future to draw on. */
+  future?: number;
+  /** Turns the chart into a drawing surface. Draw's whole reason to exist. */
+  sketch?: SketchProps;
   kind: ChartKind;
   overlays: Overlay[];
   studies: Study[];
@@ -251,6 +282,8 @@ export function PriceChart({
         fixLeftEdge: true,
         fixRightEdge: true,
         lockVisibleTimeRangeOnResize: true,
+        // Set for real by the effect below, which is where it can follow the
+        // mode. Four is the resting value: a little air past the last candle.
         rightOffset: 4,
         secondsVisible: false,
         timeVisible: true,
@@ -568,7 +601,7 @@ export function PriceChart({
       for (let i = 1; i < panes.length; i++) panes[i].setStretchFactor(1);
     }
 
-    instance.timeScale().fitContent();
+    if (future === 0) instance.timeScale().fitContent();
 
     return () => {
       for (const s of added) {
@@ -580,9 +613,40 @@ export function PriceChart({
       }
       priceSeries.current = null;
     };
-  }, [candles, data, kind, overlays, studies, palette]);
+  }, [candles, data, future, kind, overlays, studies, palette]);
 
   /* ---- scale and fit ------------------------------------------------------ */
+
+  /**
+   * Room to the right of the last candle.
+   *
+   * Four bars of breathing space normally; the whole horizon in Draw, because
+   * that empty strip is the canvas.
+   *
+   * Three options, and each one is load-bearing. `rightOffset` is the library's
+   * own word for space past the last bar — whitespace bars were the other way
+   * to make it and they do not work, because `fixRightEdge` pins the edge to
+   * the last bar that *has* data. `fixRightEdge` itself means "never scroll
+   * past the last bar", which is exactly what reserving space past the last bar
+   * is, so the mode that needs the space gives up the guard. And `barSpacing`
+   * decides how much history comes along: everything divided by the bars there
+   * are to show, which is `fitContent` done by hand — the real `fitContent`
+   * cannot be used here because it ends at the last bar and the whole point is
+   * what comes after it.
+   */
+  useEffect(() => {
+    const instance = chart.current;
+    if (!instance) return;
+    const width = instance.paneSize(0).width;
+    const bars = data.length + future;
+    instance.timeScale().applyOptions({
+      fixRightEdge: future === 0,
+      rightOffset: future > 0 ? future : 4,
+      ...(future > 0 && width > 0 && bars > 0
+        ? { barSpacing: width / bars }
+        : {}),
+    });
+  }, [data.length, future]);
 
   useEffect(() => {
     chart.current?.priceScale("right").applyOptions({
@@ -590,9 +654,39 @@ export function PriceChart({
     });
   }, [logScale]);
 
+  /**
+   * "Fit" puts everything back on the screen.
+   *
+   * Only meaningful on Desk: in Draw the view is the whole series plus the
+   * horizon already, and there is no toolbar to press it from.
+   */
   useEffect(() => {
-    chart.current?.timeScale().fitContent();
-  }, [fitToken]);
+    if (future === 0) chart.current?.timeScale().fitContent();
+  }, [fitToken, future]);
+
+  /**
+   * The bar still forming.
+   *
+   * `update` rather than `setData`: the same time replaces the last bar in
+   * place, which is one repaint rather than a teardown of every series on the
+   * chart. Line and area want a close, the candle kinds want the whole bar.
+   *
+   * The second argument is not optional here. The bar being ticked is the last
+   * *real* one, and the last point in the series is forty whitespace bars past
+   * it — so by the library\'s reckoning this is a historical write, and without
+   * the flag it throws "cannot update oldest data" rather than drawing.
+   */
+  useEffect(() => {
+    const series = priceSeries.current;
+    if (!series || !live) return;
+    const time = seconds(live.t);
+    series.update(
+      kind === "line" || kind === "area"
+        ? { time, value: live.c }
+        : { close: live.c, high: live.h, low: live.l, open: live.o, time },
+      true,
+    );
+  }, [kind, live]);
 
   /* ---- the legend --------------------------------------------------------- */
 
@@ -728,9 +822,34 @@ export function PriceChart({
     target.addEventListener("pointercancel", end);
   };
 
+  /* The sketch needs one fixed point on each axis and the spacing between
+     bars; from those, any second maps to a pixel. */
+  const barSeconds =
+    candles.length > 1 ? seconds(candles[1].t) - seconds(candles[0].t) : 60;
+  const firstTime = candles.length ? seconds(candles[0].t) : 0;
+  const nowTime = candles.length ? seconds(candles[candles.length - 1].t) : 0;
+
   return (
-    <div className={cn("relative h-full w-full", className)}>
+    <div className={cn("relative h-full w-full", className)} data-bars={`${data.length}/${future}`}>
       <div className="h-full w-full" ref={box} />
+
+      {sketch ? (
+        <Sketch
+          barSeconds={barSeconds}
+          chart={chart}
+          columnSeconds={sketch.columnSeconds}
+          firstTime={firstTime}
+          ghost={sketch.ghost}
+          horizon={sketch.horizon}
+          now={nowTime}
+          onGhost={sketch.onGhost}
+          onStrokes={sketch.onStrokes}
+          palette={palette}
+          plan={sketch.plan}
+          series={priceSeries}
+          strokes={sketch.strokes}
+        />
+      ) : null}
 
       {/* The grips sit over the canvas. `pointer-events-none` on the layer and
           `auto` on each strip, so only the 14px band under a level takes the
