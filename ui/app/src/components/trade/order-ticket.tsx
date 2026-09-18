@@ -131,28 +131,12 @@ export function liquidationPrice(order: Order, market: Market): number {
 /**
  * A label above a field, and whatever the field wants on the right of it.
  *
- * Baseline by default, because the aside is nearly always a figure and two
- * pieces of text on a row line up on their baselines, not their boxes. A
- * switch has no baseline worth the name — it is a 26px capsule, and aligning
- * its bottom edge to the label's baseline sits it visibly high. So the one
- * head that carries a control centres instead.
+ * Baseline, not centre: the aside is always a figure, and two pieces of text
+ * on a row line up on their baselines rather than on their boxes.
  */
-function FieldHead({
-  label,
-  aside,
-  align = "baseline",
-}: {
-  label: string;
-  aside?: ReactNode;
-  align?: "baseline" | "center";
-}) {
+function FieldHead({ label, aside }: { label: string; aside?: ReactNode }) {
   return (
-    <div
-      className={cn(
-        "flex justify-between gap-3 px-1",
-        align === "center" ? "items-center" : "items-baseline",
-      )}
-    >
+    <div className="flex items-baseline justify-between gap-3 px-1">
       <span className="text-kicker text-fg-subtle">{label}</span>
       {aside}
     </div>
@@ -219,7 +203,7 @@ function Chip({
     <Button
       className="flex-1 rounded-full"
       onClick={onClick}
-      size="sm"
+      size="lg"
       variant="outline"
     >
       {children}
@@ -283,6 +267,16 @@ function Amount({
  * thing the switch does, and it was the first thing a 174px column could not
  * afford. "Drag it on the chart" went the same way and comes back once, under
  * the pair, rather than twice, once under each.
+ *
+ * One well rather than a floating label above a tinted box. Two reasons, and
+ * the first is that it was the flimsiest thing in the ticket: every other
+ * control here is a surface you can see the edges of, and these were two words
+ * and a switch sitting on the panel with nothing under them.
+ *
+ * The second is arithmetic. Setting a level used to cost 52px — a whole second
+ * block — which is why the ticket had to reserve room it then spent most of
+ * its life not using. Inside the well the price is a second line, 21px, and
+ * the difference is what let everything else grow.
  */
 function Exit({
   label,
@@ -295,36 +289,26 @@ function Exit({
   tone: "down" | "up";
   onToggle: (on: boolean) => void;
 }) {
+  const on = price !== null;
+  const tint = tone === "down" ? "text-down" : "text-up";
+
   return (
-    <div className="flex flex-col gap-2">
-      <FieldHead
-        align="center"
-        aside={
-          <Switch
-            checked={price !== null}
-            label={label}
-            onChange={onToggle}
-            tone={tone}
-          />
-        }
-        label={label}
-      />
-      {price !== null ? (
-        <div
-          className={cn(
-            "flex h-11 items-center rounded-2xl px-4",
-            tone === "down" ? "bg-down/10" : "bg-up/10",
-          )}
-        >
-          <span
-            className={cn(
-              "figures truncate text-caption font-medium",
-              tone === "down" ? "text-down" : "text-up",
-            )}
-          >
-            ${fmtPrice(price)}
-          </span>
-        </div>
+    <div
+      className={cn(
+        "flex min-h-16 flex-col justify-center gap-1 rounded-2xl px-4 py-3 transition-colors duration-micro ease-smooth-out",
+        on ? (tone === "down" ? "bg-down/10" : "bg-up/10") : "well",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn("truncate text-kicker", on ? tint : "text-fg-subtle")}>
+          {label}
+        </span>
+        <Switch checked={on} label={label} onChange={onToggle} tone={tone} />
+      </div>
+      {on ? (
+        <span className={cn("figures truncate text-caption font-medium", tint)}>
+          ${fmtPrice(price)}
+        </span>
       ) : null}
     </div>
   );
@@ -622,16 +606,38 @@ export function OrderTicket({
           />
         </div>
 
-        {order.stopLoss !== null || order.takeProfit !== null ? (
-          <p className="px-1 text-kicker text-fg-subtle">
-            {order.stopLoss !== null && order.takeProfit !== null
-              ? "Drag them on the chart"
-              : "Drag it on the chart"}
-          </p>
-        ) : null}
+        {/* Always on the page, not only once a level exists.
+            Two reasons and they happen to be the same reason. The panel
+            reserves the height either way — the exits' second lines have to
+            land somewhere — so a line that appears and disappears buys nothing
+            and moves everything below it. And the sentence is most useful
+            before you have touched a switch, when "what does this do" is
+            still a live question: it says a line lands on the chart, and that
+            you move it there rather than typing it. */}
+        <p className="px-1 text-kicker text-fg-subtle">
+          {order.stopLoss !== null && order.takeProfit !== null
+            ? "Drag them on the chart"
+            : order.stopLoss !== null || order.takeProfit !== null
+              ? "Drag it on the chart"
+              : "Set one and drag it on the chart"}
+        </p>
       </div>
 
+      {/*
+       * The drawer sits at the foot of the body, not straight under the exits.
+       *
+       * The ticket is as tall as the three grid rows beside it, and its content
+       * is not — so there is slack, and the only question is where it goes.
+       * Spread across the gaps it makes the whole ticket loose; left under the
+       * last control it is a hole. Here it is the break between the order you
+       * are placing and the settings you almost never touch, with Advanced
+       * landing against the summary it belongs beside.
+       *
+       * It also means nothing above it moves when an exit opens: the exits grow
+       * down into the slack and Advanced stays where it is.
+       */}
       {advanced ? (
+        <div className="xl:mt-auto">
         <Disclosure
           label={changed === 0 ? "Advanced" : `Advanced · ${changed} changed`}
           onToggle={setAdvancedOpen}
@@ -696,6 +702,7 @@ export function OrderTicket({
             </div>
           </div>
         </Disclosure>
+        </div>
       ) : null}
 
     </div>
