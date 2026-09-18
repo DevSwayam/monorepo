@@ -126,9 +126,9 @@ export function MarketHeader({
         against the fold chevron and, on a phone, either truncated the market's
         own name to nothing or pushed the change pill off the side.
         
-        Folded, there are no 24h figures to make room for, so the same content
-        goes on one line and the panel becomes the thin bar it should be. A fold
-        that keeps the panel the same height is not a fold.
+        Folded, the 24h figures shrink to one, so the same content goes on one
+        line and the panel becomes the thin bar it should be. A fold that keeps
+        the panel the same height is not a fold.
       */}
       <button
         aria-haspopup="dialog"
@@ -177,19 +177,42 @@ export function MarketHeader({
       </button>
 
       {/*
-        The fold takes the 24h figures out of the row rather than out of a
-        drawer under it, so folding costs the panel no height and gains it none
-        — it is decluttering, not collapsing. What survives is the price and
-        today's move, which is the pair a reader opened it for.
+        Three figures, or one.
+
+        The fold is about height — two lines to one — so it does not have to
+        empty the right half of the panel to do its job, and since the panel
+        holds its width either way, emptying it just leaves 230px of nothing
+        beside the price. High and low collapse into the range they describe,
+        which is the same reading in a third of the room; the volume is what
+        actually goes, being the one of the three that answers no question a
+        reader has while looking at a price.
 
         Wraps rather than overflows: three stats at a 24px gap need ~290px, and
         a phone has about that once the page and panel padding are off.
       */}
-      {panel && !collapsed ? (
+      {panel ? (
         <dl className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-6 gap-y-3 sm:gap-x-10">
-          <HeaderStat label="24h high" value={`$${fmtPrice(market.high24h)}`} />
-          <HeaderStat label="24h low" value={`$${fmtPrice(market.low24h)}`} />
-          <HeaderStat label="24h traded" value={compactUsd(market.volume24h)} />
+          {collapsed ? (
+            <HeaderStat
+              label="24h range"
+              value={`$${fmtPrice(market.low24h)} – $${fmtPrice(market.high24h)}`}
+            />
+          ) : (
+            <>
+              <HeaderStat
+                label="24h high"
+                value={`$${fmtPrice(market.high24h)}`}
+              />
+              <HeaderStat
+                label="24h low"
+                value={`$${fmtPrice(market.low24h)}`}
+              />
+              <HeaderStat
+                label="24h traded"
+                value={compactUsd(market.volume24h)}
+              />
+            </>
+          )}
         </dl>
       ) : null}
 
