@@ -190,35 +190,36 @@ export function MarketHeader({
         Wraps rather than overflows: three stats at a 24px gap need ~290px, and
         a phone has about that once the page and panel padding are off.
       */}
-      {panel ? (
+      {panel && collapsed ? (
+        /* Label then figure on one line, which is the shape the account panel
+           beside it folds to. Stacked it was the only two-line thing in a
+           one-line bar, and it read as a block that had been left behind
+           rather than as the last item on the row. */
+        <dl className="ml-auto flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
+          <dt className="text-kicker text-fg-subtle">Range</dt>
+          <dd className="figures text-caption">
+            ${fmtPrice(market.low24h)} – ${fmtPrice(market.high24h)}
+          </dd>
+        </dl>
+      ) : null}
+
+      {panel && !collapsed ? (
         <dl className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-6 gap-y-3 sm:gap-x-10">
-          {collapsed ? (
-            <HeaderStat
-              label="24h range"
-              value={`$${fmtPrice(market.low24h)} – $${fmtPrice(market.high24h)}`}
-            />
-          ) : (
-            <>
-              <HeaderStat
-                label="24h high"
-                value={`$${fmtPrice(market.high24h)}`}
-              />
-              <HeaderStat
-                label="24h low"
-                value={`$${fmtPrice(market.low24h)}`}
-              />
-              <HeaderStat
-                label="24h traded"
-                value={compactUsd(market.volume24h)}
-              />
-            </>
-          )}
+          <HeaderStat label="24h high" value={`$${fmtPrice(market.high24h)}`} />
+          <HeaderStat label="24h low" value={`$${fmtPrice(market.low24h)}`} />
+          <HeaderStat label="24h traded" value={compactUsd(market.volume24h)} />
         </dl>
       ) : null}
 
       {panel && onCollapsed ? (
         <FoldButton
-          className="absolute top-3 right-3 sm:top-4 sm:right-4"
+          className={cn(
+            "absolute right-3 sm:right-4",
+            // Same rule as the account panel's: expanded it holds the corner
+            // of a two-line block, folded there is one line and the corner is
+            // nowhere in particular, so it sits on the line it belongs to.
+            collapsed ? "-translate-y-1/2 top-1/2" : "top-3 sm:top-4",
+          )}
           collapsed={collapsed}
           onCollapsed={onCollapsed}
           title="the 24 hour figures"
