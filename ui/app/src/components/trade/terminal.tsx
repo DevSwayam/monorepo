@@ -305,11 +305,18 @@ export function Terminal({
             className="grid min-w-0 gap-4 xl:h-[calc(100svh-6rem)] xl:[grid-template-columns:var(--cols)] xl:[grid-template-rows:auto_minmax(15rem,1fr)_auto]"
             style={{ ["--cols" as string]: columns }}
           >
-            {/* The header takes what it needs and the account takes the rest.
-                Sharing the row as `1fr` + a fixed column left the header with
-                180px of slack that `justify-between` parked in the middle of
-                it, and the account cramped into three lines beside it. */}
-            <div className="grid min-w-0 items-stretch gap-4 xl:col-span-2 xl:col-start-1 xl:row-start-1 xl:grid-cols-[minmax(0,auto)_minmax(20rem,1fr)]">
+            {/*
+              Three parts to two, fixed.
+
+              This was `auto` + `1fr` — the header took what it needed and the
+              account took the rest — which sized the row from its contents and
+              so moved the seam every time the contents changed. Folding the
+              24h figures away took 240px out of the header and handed them to
+              the account, and the two panels swapped widths in front of you.
+              A proportional split lands within three pixels of where `auto`
+              put the seam and then stays there, open or shut.
+            */}
+            <div className="grid min-w-0 items-stretch gap-4 xl:col-span-2 xl:col-start-1 xl:row-start-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
               <MarketHeader
                 collapsed={topShut}
                 market={market}

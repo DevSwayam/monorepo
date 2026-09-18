@@ -176,14 +176,17 @@ export function MarketHeader({
         )}
       </button>
 
-      {/* Wraps rather than overflows: three stats at a 24px gap need ~290px,
-          and a phone has about that once the page and panel padding are off. */}
-      {/* The fold takes the 24h figures out of the row rather than out of a
-          drawer under it, so folding costs the panel no height and gains it
-          none — it is decluttering, not collapsing. What survives is the price
-          and today's move, which is the pair a reader opened it for. */}
+      {/*
+        The fold takes the 24h figures out of the row rather than out of a
+        drawer under it, so folding costs the panel no height and gains it none
+        — it is decluttering, not collapsing. What survives is the price and
+        today's move, which is the pair a reader opened it for.
+
+        Wraps rather than overflows: three stats at a 24px gap need ~290px, and
+        a phone has about that once the page and panel padding are off.
+      */}
       {panel && !collapsed ? (
-        <dl className="flex shrink-0 flex-wrap justify-end gap-x-6 gap-y-3 sm:gap-x-10">
+        <dl className="ml-auto flex shrink-0 flex-wrap justify-end gap-x-6 gap-y-3 sm:gap-x-10">
           <HeaderStat label="24h high" value={`$${fmtPrice(market.high24h)}`} />
           <HeaderStat label="24h low" value={`$${fmtPrice(market.low24h)}`} />
           <HeaderStat label="24h traded" value={compactUsd(market.volume24h)} />
